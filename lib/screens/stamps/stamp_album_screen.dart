@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/collection_item.dart';
 import '../../core/theme/app_colors.dart';
 import 'stamp_detail_screen.dart';
-import 'dart:io';
 
 class StampAlbumScreen extends StatelessWidget {
   final List<CollectionItem> stampList;
@@ -13,7 +12,6 @@ class StampAlbumScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Pul Albümü")),
-      // Eğer liste boşsa kullanıcıya bilgi veriyoruz, doluysa albümü diziyoruz
       body: stampList.isEmpty
           ? const Center(
               child: Text(
@@ -22,7 +20,7 @@ class StampAlbumScreen extends StatelessWidget {
               ),
             )
           : ListView.builder(
-              scrollDirection: Axis.horizontal,
+              scrollDirection: Axis.vertical,
               itemCount: stampList.length,
               itemBuilder: (context, index) {
                 final item = stampList[index];
@@ -62,14 +60,22 @@ class StampAlbumScreen extends StatelessWidget {
                           child: item.imagePath.isNotEmpty
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(20),
-                                  child: Image.file(
-                                    File(item.imagePath),
+                                  // Image.file silindi, Firebase URL'leri için Image.network eklendi:
+                                  child: Image.network(
+                                    item.imagePath,
                                     fit: BoxFit.cover,
+                                    // Resim yüklenirken bir sorun oluşursa uygulamanın çökmesini engeller
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.broken_image,
+                                        color: Colors.redAccent,
+                                        size: 50,
+                                      );
+                                    },
                                   ),
                                 )
                               : const Icon(
-                                  Icons
-                                      .mail_outline, // Para ikonu yerine pulu andıran zarf/posta ikonu
+                                  Icons.mail_outline,
                                   color: AppColors.gold,
                                   size: 90,
                                 ),

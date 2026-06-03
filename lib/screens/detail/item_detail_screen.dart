@@ -10,7 +10,6 @@ class ItemDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Resmin internet linki mi yoksa yerel dosya yolu mu olduğunu kontrol ediyoruz
     final bool isNetworkImage =
         item.imagePath.startsWith('http') || item.imagePath.startsWith('https');
 
@@ -22,7 +21,7 @@ class ItemDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             //-----------------------
-            // ***** DİNAMİK FOTOĞRAF ALANI ****
+            // FOTOĞRAF
             //-----------------------
             Container(
               height: 250,
@@ -30,10 +29,7 @@ class ItemDetailScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
                 color: AppColors.cardBlack,
-                border: Border.all(
-                  color: AppColors.gold.withOpacity(0.3),
-                  width: 1,
-                ),
+                border: Border.all(color: AppColors.gold.withOpacity(0.3)),
               ),
               child: item.imagePath.isNotEmpty
                   ? ClipRRect(
@@ -44,7 +40,10 @@ class ItemDetailScreen extends StatelessWidget {
                               fit: BoxFit.cover,
                               loadingBuilder:
                                   (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
+                                    if (loadingProgress == null) {
+                                      return child;
+                                    }
+
                                     return const Center(
                                       child: CircularProgressIndicator(
                                         color: AppColors.gold,
@@ -55,7 +54,7 @@ class ItemDetailScreen extends StatelessWidget {
                                 return const Center(
                                   child: Icon(
                                     Icons.broken_image,
-                                    size: 50,
+                                    size: 60,
                                     color: Colors.white30,
                                   ),
                                 );
@@ -68,17 +67,23 @@ class ItemDetailScreen extends StatelessWidget {
                                 return const Center(
                                   child: Icon(
                                     Icons.broken_image,
-                                    size: 50,
+                                    size: 60,
                                     color: Colors.white30,
                                   ),
                                 );
                               },
                             ),
                     )
-                  : const Icon(Icons.image, size: 80, color: AppColors.gold),
+                  : const Center(
+                      child: Icon(Icons.image, size: 80, color: AppColors.gold),
+                    ),
             ),
+
             const SizedBox(height: 25),
 
+            //-----------------------
+            // BAŞLIK
+            //-----------------------
             Text(
               item.name,
               style: const TextStyle(
@@ -87,14 +92,32 @@ class ItemDetailScreen extends StatelessWidget {
                 color: AppColors.gold,
               ),
             ),
-            const SizedBox(height: 20),
 
-            // Hem paralar hem taşlar ortak kullandığı için başlığı esnettik
-            buildInfo("Yıl / Karat", item.year.toString()),
+            const SizedBox(height: 25),
+
+            //-----------------------
+            // ORTAK ALANLAR
+            //-----------------------
+            buildInfo("Yıl", item.year.toString()),
+
             buildInfo("Nadirlik", item.rarity),
-            buildInfo("Kondisyon / Berraklık", item.condition),
+
+            buildInfo("Kondisyon", item.condition),
+
             buildInfo("Materyal / Renk", item.material),
-            buildInfo("Değer", "${item.value} TL"),
+
+            buildInfo("Tahmini Değer", "${item.value} TL"),
+
+            //-----------------------
+            // GEMS'E ÖZEL ALANLAR
+            //-----------------------
+            if (item.carat > 0) buildInfo("Karat", item.carat.toString()),
+
+            if (item.processType.isNotEmpty)
+              buildInfo("İşlenme Türü", item.processType),
+
+            if (item.damage.isNotEmpty) buildInfo("Hasar Durumu", item.damage),
+
             const SizedBox(height: 25),
 
             const Text(
@@ -105,6 +128,7 @@ class ItemDetailScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+
             const SizedBox(height: 10),
 
             Text(
@@ -123,6 +147,7 @@ class ItemDetailScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "$title : ",

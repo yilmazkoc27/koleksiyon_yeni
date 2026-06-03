@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/collection_item.dart';
 import '../../core/theme/app_colors.dart';
-import 'dart:io';
 
 class StampDetailScreen extends StatelessWidget {
   final CollectionItem item;
@@ -40,10 +39,20 @@ class StampDetailScreen extends StatelessWidget {
                   child: item.imagePath.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(25),
-                          child: Image.file(
-                            File(item.imagePath),
+                          // Image.file yerine Image.network kullanarak Firebase URL'lerini yüklüyoruz
+                          child: Image.network(
+                            item.imagePath,
                             fit: BoxFit
-                                .contain, // Pulun formunu bozmamak için contain daha iyi olabilir
+                                .contain, // Pulun formunu bozmamak için contain kalması harika bir tercih
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: Colors.redAccent,
+                                  size: 60,
+                                ),
+                              );
+                            },
                           ),
                         )
                       : const Icon(

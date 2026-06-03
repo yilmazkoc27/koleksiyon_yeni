@@ -8,9 +8,15 @@ class CollectionItem {
   final String description;
   final int value;
   final String imagePath;
+  final double carat;
+  final String processType;
+  final String damage;
   bool isFavorite;
 
   CollectionItem({
+    this.carat = 0,
+    this.processType = '',
+    this.damage = '',
     this.docId,
     required this.name,
     required this.year,
@@ -35,12 +41,12 @@ class CollectionItem {
       'value': value,
       'imagePath': imagePath,
       'isFavorite': isFavorite,
+      'carat': carat,
+      'processType': processType,
+      'damage': damage,
     };
   }
 
-  // 2. Firestore'dan gelen Map (JSON) verisini Dart Nesnesine çevirir
-  // HATA KESİN ÇÖZÜMÜ: [String? documentId] diyerek parametreyi köseli parantez içine aldık ve isteğe bağlı (optional) yaptık.
-  // Böylece sadece tek parametre gönderilen eski kodların (Albüm vs.) hata vermesini engelledik.
   factory CollectionItem.fromMap(
     Map<String, dynamic> map, [
     String? documentId,
@@ -57,6 +63,9 @@ class CollectionItem {
       value: int.tryParse(map['value']?.toString() ?? '0') ?? 0,
       imagePath: map['imagePath'] ?? '',
       isFavorite: map['isFavorite'] ?? false,
+      carat: double.tryParse(map['carat']?.toString() ?? '0') ?? 0,
+      processType: map['processType'] ?? '',
+      damage: map['damage'] ?? '',
     );
   }
 
@@ -72,6 +81,9 @@ class CollectionItem {
     int? value,
     String? imagePath,
     bool? isFavorite,
+    double? carat,
+    String? processType,
+    String? damage,
   }) {
     return CollectionItem(
       docId: docId ?? this.docId,
@@ -84,6 +96,9 @@ class CollectionItem {
       value: value ?? this.value,
       imagePath: imagePath ?? this.imagePath,
       isFavorite: isFavorite ?? this.isFavorite,
+      carat: carat ?? this.carat,
+      processType: processType ?? this.processType,
+      damage: damage ?? this.damage,
     );
   }
 }
