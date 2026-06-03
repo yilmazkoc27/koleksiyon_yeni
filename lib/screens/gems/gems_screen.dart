@@ -2,13 +2,14 @@
 // *****KÜTÜPHANELER****
 //-----------------------
 
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/collection_item.dart';
-import '../../core/utils/gem_value_calculator.dart';
-import 'gems_album_screen.dart';
 import '../../core/services/user_role.dart';
-import '../../services/gem_service.dart';
 import '../detail/item_detail_screen.dart';
 
 class GemsScreen extends StatefulWidget {
@@ -18,87 +19,198 @@ class GemsScreen extends StatefulWidget {
   State<GemsScreen> createState() => _GemsScreenState();
 }
 
-//-----------------------
-// *****STATELER****
-//-----------------------
-
 class _GemsScreenState extends State<GemsScreen> {
   int estimatedValue = 0;
-  int selectedIndex = -1;
-  int totalValue = 0;
-  int averageValue = 0;
+  String? selectedItemId;
   bool ascending = true;
+  bool isUploading = false;
+  bool currentItemFavoriteStatus = false;
+
+  File? _selectedImage;
+  String _uploadedImageUrl = "";
+  final ImagePicker _picker = ImagePicker();
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController caratController = TextEditingController();
+  final TextEditingController valueController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
 
-  String gemType = "Ametist";
+  // Dropdown Seçimleri (Açılış Değerleri)
   String rarity = "Orta";
-  String clarity = "İyi";
-  String colorQuality = "Normal";
-  String processType = "Ham Taş";
-  String damage = "Yok";
-  String filterRarity = "Tümü";
+  String clarity = "İyi"; // Modeldeki 'condition' alanına karşılık geliyor
+  String colorQuality =
+      "Normal"; // Modeldeki 'material' alanına karşılık geliyor
+
+  final CollectionReference gemsCollection = FirebaseFirestore.instance
+      .collection('gems');
 
   @override
   void dispose() {
     nameController.dispose();
     descriptionController.dispose();
     caratController.dispose();
+    valueController.dispose();
     searchController.dispose();
     super.dispose();
   }
 
   //-----------------------
-  // *****DEĞERLİ TAŞLAR SAYFASI****
+  // *****FONKSİYONLAR****
   //-----------------------
-  List<CollectionItem> getFilteredList() {
-    List<CollectionItem> filtered = List.from(GemService.gemsList);
 
-    if (searchController.text.isNotEmpty) {
-      filtered = filtered.where((item) {
-        return item.name.toLowerCase().contains(
-          searchController.text.toLowerCase(),
-        );
-      }).toList();
+  Future<void> _pickImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: source,
+      imageQuality: 70,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
     }
+  }
 
-    if (filterRarity != "Tümü") {
-      filtered = filtered.where((item) {
-        return item.rarity == filterRarity;
-      }).toList();
-    }
+  Future<String> _uploadImageToStorage() async {
+    if (_selectedImage == null) return _uploadedImageUrl;
 
-    filtered.sort((a, b) {
-      if (ascending) {
-        return a.value.compareTo(b.value);
-      }
-      return b.value.compareTo(a.value);
+    setState(() {
+      isUploading = true;
     });
 
-    return filtered;
+    try {
+      String fileName = 'gem_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      Reference storageRef = FirebaseStorage.instance.ref().child(
+        'gem_images/$fileName',
+      );
+
+      UploadTask uploadTask = storageRef.putFile(_selectedImage!);
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      setState(() {
+        isUploading = false;
+      });
+      return downloadUrl;
+    } catch (e) {
+      setState(() {
+        isUploading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Fotoğraf yüklenirken hata oluştu: $e")),
+      );
+      return "";
+    }
   }
+
+  void _populateFields(CollectionItem item, String docId) {
+    setState(() {
+      selectedItemId = docId;
+      nameController.text = item.name;
+      descriptionController.text = item.description;
+      caratController.text = item.year.toString();
+      valueController.text = item.value.toString();
+      rarity = item.rarity;
+      clarity = item.condition;
+      colorQuality = item.material;
+      estimatedValue = item.value;
+      _uploadedImageUrl = item.imagePath;
+      currentItemFavoriteStatus = item.isFavorite;
+      _selectedImage = null;
+    });
+  }
+
+  void _clearForm() {
+    setState(() {
+      nameController.clear();
+      descriptionController.clear();
+      caratController.clear();
+      valueController.clear();
+      rarity = "Orta";
+      clarity = "İyi";
+      colorQuality = "Normal";
+      estimatedValue = 0;
+      selectedItemId = null;
+      _selectedImage = null;
+      _uploadedImageUrl = "";
+      currentItemFavoriteStatus = false;
+    });
+  }
+
+  Future<void> _toggleFavorite(String docId, bool currentStatus) async {
+    try {
+      await gemsCollection.doc(docId).update({'isFavorite': !currentStatus});
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Favori durumu güncellenemedi: $e")),
+      );
+    }
+  }
+
+  //-----------------------
+  // *****TEMA / WIDGET KÜTÜPHANESİ****
+  //-----------------------
+
+  InputDecoration _buildInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white70),
+      filled: true,
+      fillColor: AppColors.cardBlack,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: AppColors.gold.withOpacity(0.3)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: AppColors.gold),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      dropdownColor: AppColors.cardBlack,
+      style: const TextStyle(color: Colors.white),
+      decoration: _buildInputDecoration(label),
+      items: items.map((String item) {
+        return DropdownMenuItem<String>(value: item, child: Text(item));
+      }).toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  //-----------------------
+  // *****Arayüz (BUILD)****
+  //-----------------------
 
   @override
   Widget build(BuildContext context) {
-    final filteredList = getFilteredList();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Değerli Taşlar"),
+        title: const Text(
+          "Değerli Taşlar",
+          style: TextStyle(color: AppColors.gold),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.photo_album),
+            icon: Icon(
+              ascending ? Icons.arrow_upward : Icons.arrow_downward,
+              color: AppColors.gold,
+            ),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      GemsAlbumScreen(gemsList: GemService.gemsList),
-                ),
-              );
+              setState(() {
+                ascending = !ascending;
+              });
             },
           ),
         ],
@@ -107,572 +219,434 @@ class _GemsScreenState extends State<GemsScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Container(
-              height: 170,
-              decoration: BoxDecoration(
-                color: AppColors.cardBlack,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 1),
-                    blurRadius: 15,
+            // Resim Seçim Alanı
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: AppColors.cardBlack,
+                  builder: (context) => SafeArea(
+                    child: Wrap(
+                      children: [
+                        ListTile(
+                          leading: const Icon(
+                            Icons.photo_library,
+                            color: AppColors.gold,
+                          ),
+                          title: const Text(
+                            'Galeriden Seç',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          onTap: () {
+                            _pickImage(ImageSource.gallery);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(
+                            Icons.photo_camera,
+                            color: AppColors.gold,
+                          ),
+                          title: const Text(
+                            'Kameradan Çek',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          onTap: () {
+                            _pickImage(ImageSource.camera);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(Icons.diamond, size: 80, color: AppColors.gold),
+                );
+              },
+              child: Container(
+                height: 170,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBlack,
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: AppColors.gold.withOpacity(0.5),
+                    width: 1,
+                  ),
+                  image: _selectedImage != null
+                      ? DecorationImage(
+                          image: FileImage(_selectedImage!),
+                          fit: BoxFit.cover,
+                        )
+                      : (_uploadedImageUrl.isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(_uploadedImageUrl),
+                                fit: BoxFit.cover,
+                              )
+                            : null),
+                ),
+                child: _selectedImage == null && _uploadedImageUrl.isEmpty
+                    ? const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_a_photo,
+                            size: 50,
+                            color: AppColors.gold,
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            "Fotoğraf Eklemek İçin Dokunun",
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      )
+                    : null,
               ),
             ),
             const SizedBox(height: 25),
 
-            //-----------------------
-            // *****BİLGİ GİRİŞİ ****
-            //-----------------------
+            if (isUploading)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 15),
+                child: LinearProgressIndicator(color: AppColors.gold),
+              ),
+
+            // Form Giriş Alanları
             TextField(
               controller: nameController,
-              decoration: InputDecoration(
-                labelText: "Taş Adı",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            DropdownButtonFormField<String>(
-              initialValue: gemType,
-              dropdownColor: AppColors.cardBlack,
-              items:
-                  [
-                    "Ametist",
-                    "Akik",
-                    "Kehribar",
-                    "Opal",
-                    "Jasper",
-                    "Safir",
-                    "Yakut",
-                    "Zümrüt",
-                    "Turkuaz",
-                    "Kuvars",
-                    "Obsidyen",
-                    "Lapis Lazuli",
-                  ].map((e) {
-                    return DropdownMenuItem(
-                      value: e,
-                      child: Text(
-                        e,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  gemType = value!;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: "Taş Türü",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            TextField(
-              controller: caratController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: "Karat",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
+              style: const TextStyle(color: Colors.white),
+              decoration: _buildInputDecoration("Taş Adı"),
             ),
             const SizedBox(height: 15),
 
             TextField(
               controller: descriptionController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: "Değerli taşlar hakkında bilgi",
-                labelText: "Açıklama",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            DropdownButtonFormField<String>(
-              initialValue: rarity,
-              dropdownColor: AppColors.cardBlack,
+              maxLines: 2,
               style: const TextStyle(color: Colors.white),
-              items: ["Düşük", "Orta", "Yüksek"].map((e) {
-                return DropdownMenuItem(
-                  value: e,
-                  child: Text(e, style: const TextStyle(color: Colors.white)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  rarity = value!;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: "Nadirlik",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
+              decoration: _buildInputDecoration("Açıklama"),
             ),
             const SizedBox(height: 15),
 
-            DropdownButtonFormField<String>(
-              initialValue: clarity,
-              dropdownColor: AppColors.cardBlack,
-              items: ["Mükemmel", "Çok iyi", "İyi", "Orta", "Düşük"].map((e) {
-                return DropdownMenuItem(
-                  value: e,
-                  child: Text(e, style: const TextStyle(color: Colors.white)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  clarity = value!;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: "Berraklık",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: caratController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _buildInputDecoration("Karat Bilgisi"),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: TextField(
+                    controller: valueController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _buildInputDecoration("Tahmini Değer (TL)"),
+                    onChanged: (value) {
+                      setState(() {
+                        estimatedValue = int.tryParse(value) ?? 0;
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 15),
 
-            DropdownButtonFormField<String>(
-              initialValue: colorQuality,
-              dropdownColor: AppColors.cardBlack,
-              items: ["Canlı", "Parlak", "Normal", "Soluk"].map((e) {
-                return DropdownMenuItem(
-                  value: e,
-                  child: Text(e, style: const TextStyle(color: Colors.white)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  colorQuality = value!;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: "Renk Kalitesi",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
+            // Dropdown Seçimleri Bölümü
+            _buildDropdownField(
+              label: "Nadirlik Bilgisi",
+              value: rarity,
+              items: ["Çok Yaygın", "Yaygın", "Orta", "Nadir", "Çok Nadir"],
+              onChanged: (val) => setState(() => rarity = val ?? "Orta"),
             ),
             const SizedBox(height: 15),
 
-            DropdownButtonFormField<String>(
-              initialValue: processType,
-              dropdownColor: AppColors.cardBlack,
-              items:
-                  [
-                    "Ham Taş",
-                    "Kesilmiş",
-                    "Parlatılmış",
-                    "Takı Haline Getirilmiş",
-                  ].map((e) {
-                    return DropdownMenuItem(
-                      value: e,
-                      child: Text(
-                        e,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  processType = value!;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: "İşlenme",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
+            _buildDropdownField(
+              label: "Berraklık Bilgisi (Clarity)",
+              value: clarity,
+              items: ["Kötü", "Normal", "İyi", "Çok İyi", "Kusursuz (FL)"],
+              onChanged: (val) => setState(() => clarity = val ?? "İyi"),
             ),
             const SizedBox(height: 15),
 
-            DropdownButtonFormField<String>(
-              initialValue: damage,
-              dropdownColor: AppColors.cardBlack,
-              items: ["Yok", "Küçük Çatlak", "Belirgin Çatlak", "Kırık"].map((
-                e,
-              ) {
-                return DropdownMenuItem(
-                  value: e,
-                  child: Text(e, style: const TextStyle(color: Colors.white)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  damage = value!;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: "Hasar",
-                filled: true,
-                fillColor: AppColors.cardBlack,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            //-----------------------
-            // *****TAHMİNİ DEĞER HESAPLAMA****
-            //-----------------------
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  double carat = double.tryParse(caratController.text) ?? 1;
-                  setState(() {
-                    estimatedValue = GemValueCalculator.calculate(
-                      gemType: gemType,
-                      carat: carat,
-                      clarity: clarity,
-                      colorQuality: colorQuality,
-                      rarity: rarity,
-                      processType: processType,
-                      damage: damage,
-                    );
-                  });
-                },
-                child: const Text("Tahmini Değer Hesapla"),
-              ),
+            _buildDropdownField(
+              label: "Renk Kalitesi",
+              value: colorQuality,
+              items: ["Düşük", "Normal", "Canlı", "Eşsiz"],
+              onChanged: (val) =>
+                  setState(() => colorQuality = val ?? "Normal"),
             ),
             const SizedBox(height: 25),
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.cardBlack,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gold.withGreen(
-                      10,
-                    ), // .withOpacity(.4) alternatif düzeltme
-                    blurRadius: 15,
+            // Admin Paneli (CRUD Butonları)
+            if (UserRole.isAdmin) ...[
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: isUploading
+                        ? null
+                        : () async {
+                            if (nameController.text.isEmpty) return;
+                            String imageUrl = await _uploadImageToStorage();
+
+                            // Model formatına uygun eşleme (.toMap() yerine doğrudan map verdik)
+                            final itemMap = {
+                              'name': nameController.text,
+                              'year': int.tryParse(caratController.text) ?? 0,
+                              'rarity': rarity,
+                              'condition': clarity,
+                              'material': colorQuality,
+                              'value':
+                                  int.tryParse(valueController.text) ??
+                                  estimatedValue,
+                              'description': descriptionController.text,
+                              'imagePath': imageUrl,
+                              'isFavorite': false,
+                            };
+
+                            await gemsCollection.add(itemMap);
+                            _clearForm();
+                          },
+                    icon: const Icon(Icons.add),
+                    label: const Text("Ekle"),
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: isUploading
+                        ? null
+                        : () async {
+                            if (selectedItemId != null) {
+                              String imageUrl = await _uploadImageToStorage();
+
+                              final itemMap = {
+                                'name': nameController.text,
+                                'year': int.tryParse(caratController.text) ?? 0,
+                                'rarity': rarity,
+                                'condition': clarity,
+                                'material': colorQuality,
+                                'value':
+                                    int.tryParse(valueController.text) ??
+                                    estimatedValue,
+                                'description': descriptionController.text,
+                                'imagePath': imageUrl,
+                                'isFavorite': currentItemFavoriteStatus,
+                              };
+
+                              await gemsCollection
+                                  .doc(selectedItemId)
+                                  .update(itemMap);
+                              _clearForm();
+                            }
+                          },
+                    icon: const Icon(Icons.update),
+                    label: const Text("Güncelle"),
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: selectedItemId == null
+                        ? null
+                        : () async {
+                            await gemsCollection.doc(selectedItemId).delete();
+                            _clearForm();
+                          },
+                    icon: const Icon(Icons.delete),
+                    label: const Text("Sil"),
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _clearForm,
+                    icon: const Icon(Icons.clear_all),
+                    label: const Text("Temizle"),
                   ),
                 ],
               ),
-              child: Text(
-                "Tahmini Değer\n$estimatedValue TL",
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.gold,
+              const SizedBox(height: 25),
+            ],
+
+            // Arama Çubuğu
+            TextField(
+              controller: searchController,
+              onChanged: (value) => setState(() {}),
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: "Taşlarda Ara...",
+                labelStyle: const TextStyle(color: Colors.white70),
+                prefixIcon: const Icon(Icons.search, color: AppColors.gold),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
-            //-----------------------
-            // ***** ADMINA OZEL BUTONLAR ****
-            //-----------------------
-            if (UserRole.isAdmin) ...[
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                alignment: WrapAlignment.center,
-                children: [
-                  // ************* EKLE BUTONU ***********
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        GemService.add(
-                          CollectionItem(
-                            name: nameController.text,
-                            year: DateTime.now().year,
-                            rarity: rarity,
-                            condition: clarity,
-                            material: colorQuality,
-                            value: estimatedValue,
-                            description: descriptionController.text,
-                            imagePath: "",
-                          ),
-                        );
-                      });
-                    },
-                    child: const Text("Ekle"),
-                  ),
+            // Liste Alanı (StreamBuilder)
+            StreamBuilder<QuerySnapshot>(
+              stream: gemsCollection.snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Text(
+                    "Veriler yüklenirken bir hata oluştu.",
+                    style: TextStyle(color: Colors.white),
+                  );
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator(color: AppColors.gold);
+                }
 
-                  // ************* SİL BUTONU ***********
-                  ElevatedButton(
-                    onPressed: () {
-                      if (selectedIndex != -1) {
-                        setState(() {
-                          // Seçilen elemanı filtrelenmiş listeden bulup siliyoruz
-                          final itemToDelete = filteredList[selectedIndex];
-                          GemService.gemsList.remove(itemToDelete);
-                          selectedIndex = -1;
-                        });
-                      }
-                    },
-                    child: const Text("Sil"),
-                  ),
+                final docs = snapshot.data!.docs;
 
-                  // ************* GÜNCELLE BUTONU ***********
-                  ElevatedButton(
-                    onPressed: () {
-                      if (selectedIndex != -1) {
-                        setState(() {
-                          final itemToUpdate = filteredList[selectedIndex];
-                          final globalIndex = GemService.gemsList.indexOf(
-                            itemToUpdate,
-                          );
-                          if (globalIndex != -1) {
-                            GemService.update(
-                              globalIndex,
-                              CollectionItem(
-                                name: nameController.text,
-                                year: DateTime.now().year,
-                                rarity: rarity,
-                                condition: clarity,
-                                material: colorQuality,
-                                value: estimatedValue,
-                                description: descriptionController.text,
-                                imagePath: "",
-                              ),
-                            );
-                          }
-                        });
-                      }
-                    },
-                    child: const Text("Güncelle"),
-                  ),
+                // Client-side Arama Filtresi
+                final filteredDocs = docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final name = (data['name'] ?? '').toString().toLowerCase();
+                  final query = searchController.text.toLowerCase();
+                  return name.contains(query);
+                }).toList();
 
-                  // ************* TEMİZLE BUTONU ***********
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        nameController.clear();
-                        descriptionController.clear();
-                        caratController.clear();
-                        gemType = "Ametist";
-                        rarity = "Orta";
-                        clarity = "İyi";
-                        colorQuality = "Normal";
-                        processType = "Ham Taş";
-                        damage = "Yok";
-                        estimatedValue = 0;
-                        selectedIndex = -1;
-                      });
-                    },
-                    child: const Text("Temizle"),
-                  ),
+                // Sıralama (Artan / Azalan)
+                filteredDocs.sort((a, b) {
+                  final dataA = a.data() as Map<String, dynamic>;
+                  final dataB = b.data() as Map<String, dynamic>;
+                  final int valueA = dataA['value'] ?? 0;
+                  final int valueB = dataB['value'] ?? 0;
+                  return ascending
+                      ? valueA.compareTo(valueB)
+                      : valueB.compareTo(valueA);
+                });
 
-                  // ************* LİSTELE BUTONU ***********
-                  ElevatedButton(
-                    onPressed: () {
-                      if (GemService.gemsList.isNotEmpty) {
-                        int total = 0;
-                        for (var item in GemService.gemsList) {
-                          total += item.value;
-                        }
-                        setState(() {
-                          totalValue = total;
-                          averageValue = (total / GemService.gemsList.length)
-                              .round();
-                        });
-                      }
-                    },
-                    child: const Text("Listele"),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-
-              // ************* ISTATISTIK EKRANI ***********
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBlack,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.gold.withAlpha(3),
-                      blurRadius: 15,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      "Toplam Ürün: ${GemService.gemsList.length}",
-                      style: const TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Toplam Değer: $totalValue TL",
-                      style: const TextStyle(
-                        color: AppColors.gold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Ortalama: $averageValue TL",
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 25),
-
-              // ************* LİSTELEME VE FİLTRELEME EKRANI ***********
-              TextField(
-                controller: searchController,
-                onChanged: (_) {
-                  setState(() {});
-                },
-                decoration: InputDecoration(
-                  labelText: "Taş Ara",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: AppColors.cardBlack,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              DropdownButtonFormField<String>(
-                initialValue: filterRarity,
-                dropdownColor: AppColors.cardBlack,
-                items: ["Tümü", "Düşük", "Orta", "Yüksek"].map((e) {
-                  return DropdownMenuItem(value: e, child: Text(e));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    filterRarity = value!;
-                  });
-                },
-                decoration: InputDecoration(
-                  labelText: "Nadirlik Filtresi",
-                  filled: true,
-                  fillColor: AppColors.cardBlack,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    ascending = !ascending;
-                  });
-                },
-                child: Text(ascending ? "Değer: Artan" : "Değer: Azalan"),
-              ),
-              const SizedBox(height: 20),
-
-              const Text(
-                "Koleksiyon Listesi",
-                style: TextStyle(
-                  fontSize: 22,
-                  color: AppColors.gold,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filteredList.length,
-                itemBuilder: (context, index) {
-                  final item = filteredList[index];
-                  return Card(
-                    child: ListTile(
-                      selected: selectedIndex == index,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-
-                          MaterialPageRoute(
-                            builder: (_) => ItemDetailScreen(item: item),
-                          ),
-                        );
-                      },
-                      leading: const Icon(Icons.diamond, color: AppColors.gold),
-                      title: Text(item.name),
-                      subtitle: Text("${item.description}\n${item.value} TL"),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              item.isFavorite ? Icons.star : Icons.star_border,
-
-                              color: AppColors.gold,
-                            ),
-
-                            onPressed: () {
-                              setState(() {
-                                item.isFavorite = !item.isFavorite;
-                              });
-                            },
-                          ),
-
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-
-                            onPressed: () {
-                              setState(() {
-                                GemService.delete(index);
-                                if (selectedIndex == index) {
-                                  selectedIndex = -1;
-                                }
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                if (filteredDocs.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: Text(
+                      "Koleksiyonda taş bulunamadı.",
+                      style: TextStyle(color: Colors.white70),
                     ),
                   );
-                },
-              ),
-            ],
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filteredDocs.length,
+                  itemBuilder: (context, index) {
+                    final doc = filteredDocs[index];
+                    final dataMap = doc.data() as Map<String, dynamic>;
+
+                    final bool isFavorite = dataMap['isFavorite'] ?? false;
+                    // fromMap içine doc.id göndererek model nesnesini oluşturuyoruz
+                    final item = CollectionItem.fromMap(dataMap, doc.id);
+
+                    return Card(
+                      color: AppColors.cardBlack,
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        side: BorderSide(
+                          color: AppColors.gold.withOpacity(0.1),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: item.imagePath.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  item.imagePath,
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.diamond,
+                                color: AppColors.gold,
+                                size: 40,
+                              ),
+                        title: Text(
+                          item.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        subtitle: Text(
+                          "${item.value} TL - Nadirlik: ${item.rarity}\n${item.year} Karat",
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        isThreeLine: true,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                isFavorite ? Icons.star : Icons.star_border,
+                                color: AppColors.gold,
+                              ),
+                              onPressed: () {
+                                _toggleFavorite(doc.id, isFavorite);
+                              },
+                            ),
+                            if (UserRole.isAdmin)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () => _populateFields(item, doc.id),
+                              ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: AppColors.gold,
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ItemDetailScreen(item: item),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
       ),

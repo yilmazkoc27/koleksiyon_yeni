@@ -21,6 +21,7 @@ class StatisticsScreen extends StatelessWidget {
       ...StampService.stampList,
       ...GemService.gemsList,
     ];
+    List<CollectionItem> recentItems = allItems.reversed.take(5).toList();
 
     int favorites = allItems.where((e) => e.isFavorite).length;
 
@@ -47,6 +48,31 @@ class StatisticsScreen extends StatelessWidget {
     if (totalCollection >= 50) {
       level = "Efsane";
     }
+    List<String> achievements = [];
+
+    if (totalCollection >= 5) {
+      achievements.add("🏆 İlk Koleksiyon");
+    }
+
+    if (totalCollection >= 10) {
+      achievements.add("⭐ Koleksiyoner");
+    }
+
+    if (totalCollection >= 25) {
+      achievements.add("🔥 Uzman Koleksiyoncu");
+    }
+
+    if (totalCollection >= 50) {
+      achievements.add("👑 Efsane Koleksiyoncu");
+    }
+
+    if (totalValue >= 50000) {
+      achievements.add("💰 Zengin Koleksiyon");
+    }
+
+    if (favorites >= 10) {
+      achievements.add("❤️ Favori Ustası");
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text("İstatistikler")),
@@ -60,6 +86,21 @@ class StatisticsScreen extends StatelessWidget {
             buildCard("Toplam Koleksiyon", totalCollection.toString()),
 
             buildCard("Toplam Değer", "$totalValue TL"),
+
+            const SizedBox(height: 10),
+
+            Text(
+              totalCollection < 10
+                  ? "Koleksiyon büyümeye başladı 🚀"
+                  : totalCollection < 30
+                  ? "Harika ilerliyorsun ⭐"
+                  : "Muhteşem koleksiyon 👑",
+
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
 
             buildCard("Favoriler", favorites.toString()),
 
@@ -213,7 +254,93 @@ class StatisticsScreen extends StatelessWidget {
               minHeight: 18,
               borderRadius: BorderRadius.circular(20),
             ),
+            const SizedBox(height: 35),
+            const SizedBox(height: 35),
 
+            const Text(
+              "Son Eklenenler",
+              style: TextStyle(
+                fontSize: 22,
+                color: AppColors.gold,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            ListView.builder(
+              shrinkWrap: true,
+
+              physics: const NeverScrollableScrollPhysics(),
+
+              itemCount: recentItems.length,
+
+              itemBuilder: (context, index) {
+                final item = recentItems[index];
+
+                return Card(
+                  color: AppColors.cardBlack,
+
+                  child: ListTile(
+                    leading: const Icon(Icons.history, color: AppColors.gold),
+
+                    title: Text(item.name),
+
+                    subtitle: Text("${item.value} TL"),
+                  ),
+                );
+              },
+            ),
+
+            const Text(
+              "Başarılar",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.gold,
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            SizedBox(
+              height: 100,
+
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+
+                itemCount: achievements.length,
+
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: 180,
+
+                    margin: const EdgeInsets.only(right: 15),
+
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBlack,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+
+                        child: Text(
+                          achievements[index],
+                          textAlign: TextAlign.center,
+
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
             const SizedBox(height: 10),
 
             Center(

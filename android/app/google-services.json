@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "435427210517",
+    "project_id": "koleksiyonapp-150ff",
+    "storage_bucket": "koleksiyonapp-150ff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:435427210517:android:dc9738eb068f958e22e51c",
+        "android_client_info": {
+          "package_name": "com.example.koleksiyon_yeni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFXPqgxNJQI88UesYXF1wsBCP3mPIHrEM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

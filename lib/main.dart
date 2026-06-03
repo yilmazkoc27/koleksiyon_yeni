@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:koleksiyon_yeni/screens/splash/splash_screen.dart';
 import 'core/theme/app_theme.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  // Flutter'ın tüm widget altyapısının hazır olduğundan emin oluyoruz
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Android klasörüne koyduğumuz google-services.json dosyasını okuyarak Firebase'i uyandırıyoruz
+  await Firebase.initializeApp();
   runApp(const Collectify());
 }
 

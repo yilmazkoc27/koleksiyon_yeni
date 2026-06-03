@@ -36,13 +36,13 @@ class ValueCalculator {
     // MALZEME
 
     Map<String, int> materialPoints = {
-      "Altın": 5000,
-      "Gümüş": 2500,
+      "Altın": 12000,
+      "Gümüş": 5900,
       "Bakır": 400,
-      "Bronz": 250,
-      "Pirinç": 150,
-      "Alüminyum": 80,
-      "Kâğıt": 50,
+      "Bronz": 1250,
+      "Pirinç": 300,
+      "Alüminyum": 250,
+      "Kâğıt": 1000,
     };
 
     value += materialPoints[material] ?? 0;
