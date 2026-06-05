@@ -2,27 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
-import '../home/home_screen.dart';
 import '../../core/services/user_role.dart';
-import 'register_screen.dart'; // Kayıt ekranına geçiş için import ettik
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>(); // Form kontrolü için key
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _isLoading = false;
-  bool _isPasswordObscure = true; // Şifre göz ikonu durum takibi
+  bool _isPasswordObscure = true;
+  bool _isConfirmPasswordObscure = true;
 
-  Future<void> _handleLogin() async {
-    // 1. Form alanlarının validasyon kontrolü (Boş mu, format doğru mu)
+  Future<void> _handleRegister() async {
+    // 1. Form alanlarının doğruluğunu kontrol ediyoruz
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -30,82 +31,59 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 2. Firebase Auth ile giriş yapılıyor
+      // 2. Firebase Auth ile yeni kullanıcı kaydı oluşturuluyor
       UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
+          .createUserWithEmailAndPassword(
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
           );
 
-      String? loggedInEmail = userCredential.user?.email;
+      // 3. Kullanıcı başarıyla oluştuktan sonra Firestore kaydı yapılıyor
+      if (userCredential.user != null) {
+        String uid = userCredential.user!.uid;
 
-      if (loggedInEmail != null) {
-        // 3. Firestore'dan kullanıcının bilgilerini ve rolünü sorguluyoruz
-        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-            .collection('Kullanicilar')
-            .where('email', isEqualTo: loggedInEmail)
-            .get();
+        // Doküman ID'sini doğrudan kullanıcının benzersiz UID'si yapıyoruz
+        await FirebaseFirestore.instance.collection('Kullanicilar').doc(uid).set({
+          'uid': uid,
+          'email': _emailController.text.trim(),
+          'rol': 'user', // Yeni kayıt olan herkes standart kullanıcıdır
+          'durum':
+              'beklemede', // ⏳ KRİTİK: Giriş yapabilmek için admin onayı gerekecek
+          'kayitTarihi': FieldValue.serverTimestamp(),
+        });
 
-        if (querySnapshot.docs.isNotEmpty) {
-          var userData =
-              querySnapshot.docs.first.data() as Map<String, dynamic>;
-          String role = userData['rol'] ?? 'user';
-          String durum =
-              userData['durum'] ??
-              'onaylandi'; // Eski kayıtlar için varsayılan onaylandı
-
-          // ⏳ KRİTİK ONAY KONTROLÜ: Eğer kullanıcı admin değilse ve durumu 'beklemede' ise engelle
-          if (role != 'admin' && durum == 'beklemede') {
-            // Firebase Auth oturumunu arkada açık kalmasın diye hemen kapatıyoruz
-            await FirebaseAuth.instance.signOut();
-
-            if (!mounted) return;
-            _showSnackBar(
-              "⏳ Hesabınız henüz yönetici tarafından onaylanmamıştır.",
-              Colors.orange,
-            );
-            return; // Fonksiyonu burada kesip, ana sayfaya geçişi engelliyoruz
-          }
-
-          // Kontrolleri geçtiyse rol atamasını yapıyoruz
-          UserRole.isAdmin = (role == 'admin');
-        } else {
-          // Firestore'da doküman bulunamazsa güvenlik önlemi
-          UserRole.isAdmin = false;
-          print(
-            "⚠️ Firestore'da bu e-postaya ait rol bulunamadı, varsayılan 'user' yapıldı.",
-          );
-        }
+        // Yeni kayıt olan kullanıcı direkt içeri alınmayacağı için rolünü güvenceye alıyoruz
+        UserRole.isAdmin = false;
 
         if (!mounted) return;
 
+        // Kullanıcıya bilgi veriyoruz
         _showSnackBar(
-          UserRole.isAdmin
-              ? "👑 Yönetici Girişi Başarılı!"
-              : "👋 Kullanıcı Girişi Başarılı!",
-          Colors.green,
+          "🎉 Kayıt başarılı! Hesabınız yönetici onayından sonra aktif olacaktır.",
+          Colors.orange,
         );
 
-        // Giriş başarılı olunca login ekranını tamamen kapatıp HomeScreen'e geçiyoruz
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-          (route) => false,
-        );
+        // Otomatik girişi engellemek için Firebase Auth oturumunu hemen kapatıyoruz
+        await FirebaseAuth.instance.signOut();
+
+        // Kullanıcıyı bir önceki ekran olan Giriş (Login) ekranına geri yönlendiriyoruz
+        Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
-      String errorMessage = "Giriş başarısız oldu.";
-      if (e.code == 'user-not-found') {
-        errorMessage = "Bu e-posta adresine ait kullanıcı bulunamadı.";
-      } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
-        errorMessage = "E-posta veya şifre hatalı.";
+      String errorMessage = "Kayıt işlemi başarısız oldu.";
+      if (e.code == 'weak-password') {
+        errorMessage =
+            "Şifre çok zayıf. En az 6 karakterli daha güçlü bir şifre deneyin.";
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage =
+            "Bu e-posta adresi zaten başka bir hesap tarafından kullanılıyor.";
       } else if (e.code == 'invalid-email') {
-        errorMessage = "Geçersiz bir e-posta formatı.";
+        errorMessage = "Geçersiz bir e-posta formatı girdiniz.";
       }
 
       if (mounted) _showSnackBar(errorMessage, Colors.red);
     } catch (e) {
-      if (mounted) _showSnackBar("Sistemsel Hata: $e", Colors.orange);
+      if (mounted) _showSnackBar("Sistemsel bir hata oluştu: $e", Colors.red);
     } finally {
       if (mounted) {
         setState(() {
@@ -133,12 +111,13 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Tasarımdaki ortak border tanımlamaları
+    // Tasarımdaki input border stillerini ortaklaştırıyoruz
     final inputBorderDecoration = OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
       borderSide: BorderSide(color: Colors.white.withAlpha(20)),
@@ -150,6 +129,18 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.gold,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -162,55 +153,29 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(25),
+            padding: const EdgeInsets.symmetric(horizontal: 25),
             child: Center(
               child: SingleChildScrollView(
                 child: Form(
-                  key: _formKey, // Form takibi aktif
+                  key: _formKey, // Validasyon takibi
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo Alanı
-                      Container(
-                        height: 110,
-                        width: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF1E1E1E),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.gold.withAlpha(30),
-                              blurRadius: 40,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.workspace_premium,
-                          size: 60,
-                          color: AppColors.gold,
-                        ),
-                      ),
-                      const SizedBox(height: 25),
+                      // Başlık Alanı
                       const Text(
-                        "Collectify",
+                        "Yeni Hesap Oluştur",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       const Text(
-                        "Koleksiyonlarına Değer Kat",
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        "Collectify dünyasına katılın ve onay bekleyin",
+                        style: TextStyle(color: Colors.white38, fontSize: 14),
                       ),
-                      const SizedBox(height: 50),
+                      const SizedBox(height: 40),
 
                       // E-mail Input
                       TextFormField(
@@ -219,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return "Lütfen e-posta adresinizi giriniz.";
+                            return "Lütfen bir e-posta adresi giriniz.";
                           }
                           if (!value.contains('@')) {
                             return "Geçersiz e-posta formatı.";
@@ -228,10 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         decoration: InputDecoration(
                           hintText: "E-mail",
-                          hintStyle: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 15,
-                          ),
+                          hintStyle: const TextStyle(color: Colors.grey),
                           prefixIcon: const Icon(
                             Icons.email_outlined,
                             color: AppColors.gold,
@@ -253,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: const TextStyle(color: Colors.white),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return "Lütfen şifrenizi giriniz.";
+                            return "Lütfen şifrenizi belirleyin.";
                           }
                           if (value.length < 6) {
                             return "Şifre en az 6 karakter olmalıdır.";
@@ -262,15 +224,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         decoration: InputDecoration(
                           hintText: "Şifre",
-                          hintStyle: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 15,
-                          ),
+                          hintStyle: const TextStyle(color: Colors.grey),
                           prefixIcon: const Icon(
                             Icons.lock_outline_rounded,
                             color: AppColors.gold,
                           ),
-                          // Şifre Göster/Gizle Butonu
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordObscure
@@ -292,14 +250,59 @@ class _LoginScreenState extends State<LoginScreen> {
                           focusedErrorBorder: focusedBorderDecoration,
                         ),
                       ),
+                      const SizedBox(height: 20),
+
+                      // Şifre Tekrar Input
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: _isConfirmPasswordObscure,
+                        style: const TextStyle(color: Colors.white),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Lütfen şifrenizi tekrar giriniz.";
+                          }
+                          if (value != _passwordController.text) {
+                            return "Şifreler birbiriyle uyuşmuyor!";
+                          }
+                          return null;
+                        },
+                        decoration: InputDecoration(
+                          hintText: "Şifre Tekrar",
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: const Icon(
+                            Icons.lock_clock_outlined,
+                            color: AppColors.gold,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isConfirmPasswordObscure
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isConfirmPasswordObscure =
+                                    !_isConfirmPasswordObscure;
+                              });
+                            },
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF181818),
+                          enabledBorder: inputBorderDecoration,
+                          focusedBorder: focusedBorderDecoration,
+                          errorBorder: inputBorderDecoration,
+                          focusedErrorBorder: focusedBorderDecoration,
+                        ),
+                      ),
                       const SizedBox(height: 40),
 
-                      // Giriş Butonu
+                      // Kayıt Ol Butonu
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
+                          onPressed: _isLoading ? null : _handleRegister,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.gold,
                             foregroundColor: Colors.black,
@@ -321,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 )
                               : const Text(
-                                  "Sisteme Giriş Yap",
+                                  "Kayıt Talebi Gönder",
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
@@ -330,27 +333,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 25),
-
-                      // Kayıt Ekranına Yönlendirme Butonu
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          "Henüz bir hesabın yok mu? Hesap Oluştur",
-                          style: TextStyle(
-                            color: AppColors.gold,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

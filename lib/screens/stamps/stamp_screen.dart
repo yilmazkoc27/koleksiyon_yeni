@@ -9,7 +9,8 @@ import '../../models/collection_item.dart';
 import '../../core/services/user_role.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import '../detail/item_detail_screen.dart';
+// ESKİ YÖNLENDİRME DEĞİŞTİ: Artık pullar için özel hazırladığın detay sayfasına gidiyoruz!
+import 'stamp_detail_screen.dart';
 
 class FirestoreStampModel {
   final String docId;
@@ -40,7 +41,7 @@ class _StampScreenState extends State<StampScreen> {
 
   String rarity = "Orta";
   String condition = "Temiz";
-  String material = "Kâğıt"; // Pullar için varsayılan kâğıt yapıldı
+  String material = "Kâğıt";
   String filterRarity = "Tümü";
   String currentImageUrl = "";
 
@@ -105,6 +106,10 @@ class _StampScreenState extends State<StampScreen> {
         'imagePath': uploadedUrl,
         'isFavorite': false,
         'createdAt': FieldValue.serverTimestamp(),
+        // Teklif sistemi için varsayılan başlangıç değerleri:
+        'highestBid': 0,
+        'highestBidder': '',
+        'biddingEndsAt': null,
       });
 
       _clearForm();
@@ -210,10 +215,7 @@ class _StampScreenState extends State<StampScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Posta Pulları"),
-        // Butonu buradan kaldırdık çünkü veriyi göremiyordu.
-      ),
+      appBar: AppBar(title: const Text("Posta Pulları")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('Pullar').snapshots(),
         builder: (context, snapshot) {
@@ -226,7 +228,6 @@ class _StampScreenState extends State<StampScreen> {
             );
           }
 
-          // Veriler burada yükleniyor:
           List<FirestoreStampModel> allStamps = [];
 
           for (var doc in snapshot.data!.docs) {
@@ -257,7 +258,6 @@ class _StampScreenState extends State<StampScreen> {
                 : b.stamp.value.compareTo(a.stamp.value),
           );
 
-          // Eğer yükleme yapılıyorsa sadece loading göster, yapılmıyorsa içeriği göster
           return _isUploading
               ? const Center(
                   child: CircularProgressIndicator(color: AppColors.gold),
@@ -266,7 +266,6 @@ class _StampScreenState extends State<StampScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      // Üst Kısım: Görsel Alanı ve Albüme Gitme Butonu
                       Container(
                         height: 170,
                         width: double.infinity,
@@ -289,7 +288,6 @@ class _StampScreenState extends State<StampScreen> {
                                 color: AppColors.gold,
                               ),
                             ),
-                            // Albüm Butonunu buraya sağ üste şık bir şekilde yerleştirdik:
                             Positioned(
                               top: 10,
                               right: 10,
@@ -303,7 +301,6 @@ class _StampScreenState extends State<StampScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      // allStamps listesini artık sorunsuz görüyor!
                                       builder: (_) => StampAlbumScreen(
                                         stampList: allStamps
                                             .map((e) => e.stamp)
@@ -658,11 +655,16 @@ class _StampScreenState extends State<StampScreen> {
                                     selectedImage = null;
                                   });
                                 } else {
+                                  // PARANTEZ HATASI BURADA DÜZELTİLDİ:
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          ItemDetailScreen(item: item),
+                                      builder: (context) => StampDetailScreen(
+                                        item: item.copyWith(
+                                          docId:
+                                              docId, // Buradaki yerel 'docId' değişkenini paslıyoruz.
+                                        ),
+                                      ),
                                     ),
                                   );
                                 }

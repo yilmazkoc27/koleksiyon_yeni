@@ -9,7 +9,7 @@ import 'coin_album_screen.dart';
 import '../../core/services/user_role.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import '../detail/item_detail_screen.dart';
+import 'coin_detail_screen.dart'; // 👈 DOĞRU DETAY SAYFASI İMPORT EDİLDİ
 
 class FirestoreCoinModel {
   final String docId;
@@ -67,8 +67,7 @@ class _CoinScreenState extends State<CoinScreen> {
       UploadTask uploadTask = storageRef.putFile(imageFile);
       TaskSnapshot snapshot = await uploadTask;
 
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      return await snapshot.ref.getDownloadURL();
     } catch (e) {
       print("Storage Yükleme Hatası: $e");
       return "";
@@ -82,9 +81,7 @@ class _CoinScreenState extends State<CoinScreen> {
       return;
     }
 
-    setState(() {
-      _isUploading = true;
-    });
+    setState(() => _isUploading = true);
 
     try {
       String uploadedUrl = "";
@@ -103,7 +100,7 @@ class _CoinScreenState extends State<CoinScreen> {
         'value': estimatedValue,
         'description': descriptionController.text.trim(),
         'imagePath': uploadedUrl,
-        'isFavorite': false, // Yeni eklenen ürün varsayılan olarak favori değil
+        'isFavorite': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -112,9 +109,7 @@ class _CoinScreenState extends State<CoinScreen> {
     } catch (e) {
       _showSnackBar("Ekleme hatası: $e", Colors.red);
     } finally {
-      setState(() {
-        _isUploading = false;
-      });
+      setState(() => _isUploading = false);
     }
   }
 
@@ -127,13 +122,10 @@ class _CoinScreenState extends State<CoinScreen> {
       return;
     }
 
-    setState(() {
-      _isUploading = true;
-    });
+    setState(() => _isUploading = true);
 
     try {
       String uploadedUrl = currentImageUrl;
-
       if (selectedImage != null) {
         uploadedUrl = await _uploadImageToStorage(selectedImage!);
       }
@@ -159,9 +151,7 @@ class _CoinScreenState extends State<CoinScreen> {
     } catch (e) {
       _showSnackBar("Güncelleme hatası: $e", Colors.red);
     } finally {
-      setState(() {
-        _isUploading = false;
-      });
+      setState(() => _isUploading = false);
     }
   }
 
@@ -201,7 +191,7 @@ class _CoinScreenState extends State<CoinScreen> {
     ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
-  Future pickImage() async {
+  Future<void> pickImage() async {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() {
@@ -246,28 +236,22 @@ class _CoinScreenState extends State<CoinScreen> {
                 }
 
                 List<FirestoreCoinModel> allCoins = [];
-
                 for (var doc in snapshot.data!.docs) {
                   var data = doc.data() as Map<String, dynamic>;
+                  // 🛠️ BURASI DÜZELDİ: doc.id parametresi model'e paslanıyor!
                   final item = CollectionItem.fromMap(data, doc.id);
                   allCoins.add(FirestoreCoinModel(docId: doc.id, coin: item));
                 }
 
-                List<FirestoreCoinModel> filteredList = List.from(allCoins);
-                if (searchController.text.isNotEmpty) {
-                  filteredList = filteredList
-                      .where(
-                        (item) => item.coin.name.toLowerCase().contains(
-                          searchController.text.toLowerCase(),
-                        ),
-                      )
-                      .toList();
-                }
-                if (filterRarity != "Tümü") {
-                  filteredList = filteredList
-                      .where((item) => item.coin.rarity == filterRarity)
-                      .toList();
-                }
+                List<FirestoreCoinModel> filteredList = allCoins.where((item) {
+                  final matchesSearch = item.coin.name.toLowerCase().contains(
+                    searchController.text.toLowerCase(),
+                  );
+                  final matchesRarity =
+                      filterRarity == "Tümü" ||
+                      item.coin.rarity == filterRarity;
+                  return matchesSearch && matchesRarity;
+                }).toList();
 
                 filteredList.sort(
                   (a, b) => ascending
@@ -275,224 +259,135 @@ class _CoinScreenState extends State<CoinScreen> {
                       : b.coin.value.compareTo(a.coin.value),
                 );
 
-                return SingleChildScrollView(
+                return ListView(
                   padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 170,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBlack,
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.gold.withAlpha(40),
-                              blurRadius: 15,
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.monetization_on,
-                            size: 80,
-                            color: AppColors.gold,
+                  children: [
+                    Container(
+                      height: 140,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBlack,
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.gold.withAlpha(40),
+                            blurRadius: 15,
                           ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.monetization_on,
+                          size: 70,
+                          color: AppColors.gold,
                         ),
                       ),
-                      const SizedBox(height: 25),
-                      if (UserRole.isAdmin) ...[
-                        GestureDetector(
-                          onTap: pickImage,
-                          child: Container(
-                            height: 140,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: AppColors.cardBlack,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.gold),
-                            ),
-                            child: selectedImage != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Image.file(
-                                      selectedImage!,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                : currentImageUrl.isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Image.network(
-                                      currentImageUrl,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                : const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.add_a_photo,
-                                        size: 50,
-                                        color: AppColors.gold,
-                                      ),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        "Fotoğraf Seç",
-                                        style: TextStyle(color: Colors.white70),
-                                      ),
-                                    ],
+                    ),
+                    const SizedBox(height: 25),
+
+                    if (UserRole.isAdmin) ...[
+                      GestureDetector(
+                        onTap: pickImage,
+                        child: Container(
+                          height: 140,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBlack,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.gold),
+                          ),
+                          child: selectedImage != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Image.file(
+                                    selectedImage!,
+                                    fit: BoxFit.cover,
                                   ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: nameController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: "Para Adı",
-                            filled: true,
-                            fillColor: AppColors.cardBlack,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        TextField(
-                          controller: yearController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: "Yıl",
-                            filled: true,
-                            fillColor: AppColors.cardBlack,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        TextField(
-                          controller: descriptionController,
-                          maxLines: 3,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: "Açıklama",
-                            filled: true,
-                            fillColor: AppColors.cardBlack,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        DropdownButtonFormField<String>(
-                          initialValue: rarity,
-                          dropdownColor: AppColors.cardBlack,
-                          style: const TextStyle(color: Colors.white),
-                          items: ["Düşük", "Orta", "Yüksek"]
-                              .map(
-                                (e) =>
-                                    DropdownMenuItem(value: e, child: Text(e)),
-                              )
-                              .toList(),
-                          onChanged: (value) => setState(() => rarity = value!),
-                          decoration: InputDecoration(
-                            labelText: "Nadirlik",
-                            filled: true,
-                            fillColor: AppColors.cardBlack,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        DropdownButtonFormField<String>(
-                          initialValue: condition,
-                          dropdownColor: AppColors.cardBlack,
-                          style: const TextStyle(color: Colors.white),
-                          items:
-                              [
-                                    "Çil",
-                                    "Çil altı",
-                                    "Çok çok temiz",
-                                    "Çok temiz",
-                                    "Temiz",
-                                    "Çok iyi",
-                                    "İyi",
-                                    "Orta",
-                                    "Zayıf",
-                                  ]
-                                  .map(
-                                    (e) => DropdownMenuItem(
-                                      value: e,
-                                      child: Text(e),
+                                )
+                              : currentImageUrl.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Image.network(
+                                    currentImageUrl,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.add_a_photo,
+                                      size: 40,
+                                      color: AppColors.gold,
                                     ),
-                                  )
-                                  .toList(),
-                          onChanged: (value) =>
-                              setState(() => condition = value!),
-                          decoration: InputDecoration(
-                            labelText: "Kondisyon",
-                            filled: true,
-                            fillColor: AppColors.cardBlack,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        DropdownButtonFormField<String>(
-                          initialValue: material,
-                          dropdownColor: AppColors.cardBlack,
-                          style: const TextStyle(color: Colors.white),
-                          items:
-                              [
-                                    "Altın",
-                                    "Gümüş",
-                                    "Bronz",
-                                    "Pirinç",
-                                    "Alüminyum",
-                                    "Kâğıt",
-                                    "Bakır",
-                                  ]
-                                  .map(
-                                    (e) => DropdownMenuItem(
-                                      value: e,
-                                      child: Text(e),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      "Fotoğraf Seç",
+                                      style: TextStyle(color: Colors.white70),
                                     ),
-                                  )
-                                  .toList(),
-                          onChanged: (value) =>
-                              setState(() => material = value!),
-                          decoration: InputDecoration(
-                            labelText: "Materyal",
-                            filled: true,
-                            fillColor: AppColors.cardBlack,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
+                                  ],
+                                ),
                         ),
-                        const SizedBox(height: 25),
-                        ElevatedButton(
-                          onPressed: () {
-                            int year =
-                                int.tryParse(yearController.text) ?? 2023;
-                            setState(() {
-                              estimatedValue = ValueCalculator.calculate(
-                                year: year,
-                                rarity: rarity,
-                                condition: condition,
-                                material: material,
-                              );
-                            });
-                          },
-                          child: const Text("Tahmini Değer Hesapla"),
-                        ),
-                        const SizedBox(height: 15),
-                        Text(
+                      ),
+                      const SizedBox(height: 20),
+                      _buildTextField(nameController, "Para Adı"),
+                      const SizedBox(height: 15),
+                      _buildTextField(yearController, "Yıl", isNumber: true),
+                      const SizedBox(height: 15),
+                      _buildTextField(
+                        descriptionController,
+                        "Açıklama",
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 15),
+                      _buildDropdown(
+                        "Nadirlik",
+                        rarity,
+                        ["Düşük", "Orta", "Yüksek"],
+                        (v) {
+                          setState(() => rarity = v!);
+                        },
+                      ),
+                      const SizedBox(height: 15),
+                      _buildDropdown("Kondisyon", condition, [
+                        "Çil",
+                        "Çil altı",
+                        "Çok çok temiz",
+                        "Çok temiz",
+                        "Temiz",
+                        "Çok iyi",
+                        "İyi",
+                        "Orta",
+                        "Zayıf",
+                      ], (v) => setState(() => condition = v!)),
+                      const SizedBox(height: 15),
+                      _buildDropdown("Materyal", material, [
+                        "Altın",
+                        "Gümüş",
+                        "Bronz",
+                        "Pirinç",
+                        "Alüminyum",
+                        "Kâğıt",
+                        "Bakır",
+                      ], (v) => setState(() => material = v!)),
+                      const SizedBox(height: 25),
+                      ElevatedButton(
+                        onPressed: () {
+                          int year = int.tryParse(yearController.text) ?? 2023;
+                          setState(() {
+                            estimatedValue = ValueCalculator.calculate(
+                              year: year,
+                              rarity: rarity,
+                              condition: condition,
+                              material: material,
+                            );
+                          });
+                        },
+                        child: const Text("Tahmini Değer Hesapla"),
+                      ),
+                      const SizedBox(height: 15),
+                      Center(
+                        child: Text(
                           "Tahmini Değer: $estimatedValue TL",
                           style: const TextStyle(
                             fontSize: 20,
@@ -500,111 +395,109 @@ class _CoinScreenState extends State<CoinScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
+                      ),
+                      const SizedBox(height: 20),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          ElevatedButton(
+                            onPressed: _addCoinToFirestore,
+                            child: const Text("Ekle"),
+                          ),
+                          ElevatedButton(
+                            onPressed: _updateCoinInFirestore,
+                            child: const Text("Güncelle"),
+                          ),
+                          ElevatedButton(
+                            onPressed: _clearForm,
+                            child: const Text("Temizle"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              int total = 0;
+                              for (var item in allCoins) {
+                                total += item.coin.value;
+                              }
+                              setState(() {
+                                totalValue = total;
+                                averageValue = allCoins.isEmpty
+                                    ? 0
+                                    : (total / allCoins.length).round();
+                              });
+                            },
+                            child: const Text("İstatistik Hesapla"),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 25),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBlack,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Column(
                           children: [
-                            ElevatedButton(
-                              onPressed: _addCoinToFirestore,
-                              child: const Text("Ekle"),
+                            Text(
+                              "Toplam Ürün: ${allCoins.length}",
+                              style: const TextStyle(color: Colors.white),
                             ),
-                            ElevatedButton(
-                              onPressed: _updateCoinInFirestore,
-                              child: const Text("Güncelle"),
+                            Text(
+                              "Toplam Değer: $totalValue TL",
+                              style: const TextStyle(color: AppColors.gold),
                             ),
-                            ElevatedButton(
-                              onPressed: _clearForm,
-                              child: const Text("Temizle"),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                int total = 0;
-                                for (var item in allCoins) {
-                                  total += item.coin.value;
-                                }
-                                setState(() {
-                                  totalValue = total;
-                                  averageValue = allCoins.isEmpty
-                                      ? 0
-                                      : (total / allCoins.length).round();
-                                });
-                              },
-                              child: const Text("İstatistik Hesapla"),
+                            Text(
+                              "Ortalama Değer: $averageValue TL",
+                              style: const TextStyle(color: Colors.white70),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 25),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardBlack,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                "Toplam Ürün: ${allCoins.length}",
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              Text(
-                                "Toplam Değer: $totalValue TL",
-                                style: const TextStyle(color: AppColors.gold),
-                              ),
-                              Text(
-                                "Ortalama Değer: $averageValue TL",
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 25),
-                      ],
-                      TextField(
-                        controller: searchController,
-                        onChanged: (_) => setState(() {}),
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Ürün Ara",
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: AppColors.cardBlack,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      DropdownButtonFormField<String>(
-                        initialValue: filterRarity,
-                        dropdownColor: AppColors.cardBlack,
-                        style: const TextStyle(color: Colors.white),
-                        items: ["Tümü", "Düşük", "Orta", "Yüksek"]
-                            .map(
-                              (e) => DropdownMenuItem(value: e, child: Text(e)),
-                            )
-                            .toList(),
-                        onChanged: (value) =>
-                            setState(() => filterRarity = value!),
-                        decoration: InputDecoration(
-                          labelText: "Nadirlik Filtresi",
-                          filled: true,
-                          fillColor: AppColors.cardBlack,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      ElevatedButton(
-                        onPressed: () => setState(() => ascending = !ascending),
-                        child: Text(
-                          ascending ? "Değer: Artan" : "Değer: Azalan",
-                        ),
                       ),
                       const SizedBox(height: 25),
-                      const Text(
+                    ],
+
+                    TextField(
+                      controller: searchController,
+                      onChanged: (value) {
+                        setState(() {});
+                      },
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: "Ürün Ara",
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: AppColors.gold,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.cardBlack,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildDropdown(
+                      "Nadirlik Filtresi",
+                      filterRarity,
+                      ["Tümü", "Düşük", "Orta", "Yüksek"],
+                      (v) {
+                        setState(() => filterRarity = v!);
+                      },
+                    ),
+                    const SizedBox(height: 15),
+                    ElevatedButton.icon(
+                      onPressed: () => setState(() => ascending = !ascending),
+                      icon: Icon(
+                        ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                      ),
+                      label: Text(ascending ? "Değer: Artan" : "Değer: Azalan"),
+                    ),
+                    const SizedBox(height: 25),
+                    const Center(
+                      child: Text(
                         "Koleksiyon Listesi",
                         style: TextStyle(
                           fontSize: 22,
@@ -612,123 +505,181 @@ class _CoinScreenState extends State<CoinScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 15),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: filteredList.length,
-                        itemBuilder: (context, index) {
-                          final coinModel = filteredList[index];
-                          final item = coinModel.coin;
-                          final docId = coinModel.docId;
+                    ),
+                    const SizedBox(height: 15),
 
-                          return Card(
-                            color: AppColors.cardBlack,
-                            child: ListTile(
-                              selected: selectedDocId == docId,
-                              selectedColor: AppColors.gold,
-                              onTap: () {
-                                if (UserRole.isAdmin) {
-                                  setState(() {
-                                    selectedDocId = docId;
-                                    nameController.text = item.name;
-                                    yearController.text = item.year.toString();
-                                    descriptionController.text =
-                                        item.description;
-                                    rarity = item.rarity;
-                                    condition = item.condition;
-                                    material = item.material;
-                                    estimatedValue = item.value;
-                                    currentImageUrl = item.imagePath;
-                                    selectedImage = null;
-                                  });
-                                } else {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ItemDetailScreen(item: item),
+                    if (filteredList.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Text(
+                            "Aranan kriterlere uygun para bulunamadı.",
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      )
+                    else
+                      ...filteredList.map((coinModel) {
+                        final item = coinModel.coin;
+                        final docId = coinModel.docId;
+                        final isSelected = selectedDocId == docId;
+
+                        return Card(
+                          color: AppColors.cardBlack,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.gold
+                                  : Colors.transparent,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: ListTile(
+                            selected: isSelected,
+                            onTap: () {
+                              if (UserRole.isAdmin) {
+                                setState(() {
+                                  selectedDocId = docId;
+                                  nameController.text = item.name;
+                                  yearController.text = item.year.toString();
+                                  descriptionController.text = item.description;
+                                  rarity = item.rarity;
+                                  condition = item.condition;
+                                  material = item.material;
+                                  estimatedValue = item.value;
+                                  currentImageUrl = item.imagePath;
+                                  selectedImage = null;
+                                });
+                              } else {
+                                // 🛠️ BURASI DEĞİŞTİ: CoinDetailScreen sayfasına yönlendiriyor!
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        CoinDetailScreen(coin: item),
+                                  ),
+                                );
+                              }
+                            },
+                            leading: item.imagePath.isNotEmpty
+                                ? CircleAvatar(
+                                    backgroundImage: NetworkImage(
+                                      item.imagePath,
                                     ),
-                                  );
-                                }
-                              },
-                              leading: item.imagePath.isNotEmpty
-                                  ? CircleAvatar(
-                                      backgroundImage: NetworkImage(
-                                        item.imagePath,
-                                      ),
-                                    )
-                                  : const Icon(
+                                  )
+                                : const CircleAvatar(
+                                    backgroundColor: Colors.black26,
+                                    child: Icon(
                                       Icons.monetization_on,
                                       color: AppColors.gold,
                                     ),
-                              title: Text(
-                                item.name,
-                                style: const TextStyle(color: Colors.white),
+                                  ),
+                            title: Text(
+                              item.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                               ),
-                              subtitle: Text(
-                                "${item.year} - ${item.material}\n${item.value} TL",
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // GÜNCELLENEN FAVORİ BUTONU
-                                  IconButton(
-                                    icon: Icon(
-                                      item.isFavorite
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      color: AppColors.gold,
-                                    ),
-                                    onPressed: () async {
-                                      // 1. Ekranın anlık tepki vermesi için local state'i hemen değiştiriyoruz
+                            ),
+                            subtitle: Text(
+                              "${item.year} - ${item.material}\n${item.value} TL",
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    item.isFavorite
+                                        ? Icons.star
+                                        : Icons.star_border,
+                                    color: AppColors.gold,
+                                  ),
+                                  onPressed: () async {
+                                    setState(() {
+                                      item.isFavorite = !item.isFavorite;
+                                    });
+
+                                    try {
+                                      await FirebaseFirestore.instance
+                                          .collection('Paralar')
+                                          .doc(docId)
+                                          .update({
+                                            'isFavorite': item.isFavorite,
+                                          });
+                                    } catch (e) {
                                       setState(() {
                                         item.isFavorite = !item.isFavorite;
                                       });
-
-                                      try {
-                                        // 2. Firestore veritabanını güncelliyoruz
-                                        await FirebaseFirestore.instance
-                                            .collection('Paralar')
-                                            .doc(docId)
-                                            .update({
-                                              'isFavorite': item.isFavorite,
-                                            });
-                                        print("Favori güncellendi");
-                                      } catch (e) {
-                                        print("HATA: $e");
-                                        // Hata olursa eski haline geri al ve uyar
-                                        setState(() {
-                                          item.isFavorite = !item.isFavorite;
-                                        });
-                                        _showSnackBar(
-                                          "Favori güncellenemedi: $e",
-                                          Colors.red,
-                                        );
-                                      }
-                                    },
-                                  ),
-                                  if (UserRole.isAdmin)
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () =>
-                                          _deleteCoinFromFirestore(docId),
+                                      _showSnackBar(
+                                        "Favori güncellenemedi: $e",
+                                        Colors.red,
+                                      );
+                                    }
+                                  },
+                                ),
+                                if (UserRole.isAdmin)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
                                     ),
-                                ],
-                              ),
+                                    onPressed: () =>
+                                        _deleteCoinFromFirestore(docId),
+                                  ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                          ),
+                        );
+                      }),
+                  ],
                 );
               },
             ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint, {
+    bool isNumber = false,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: AppColors.cardBlack,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(
+    String label,
+    String value,
+    List<String> items,
+    ValueChanged<String?> onChanged,
+  ) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      dropdownColor: AppColors.cardBlack,
+      style: const TextStyle(color: Colors.white),
+      items: items
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: AppColors.cardBlack,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+      ),
     );
   }
 }

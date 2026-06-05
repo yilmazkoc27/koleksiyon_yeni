@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
 import '../../core/theme/app_colors.dart';
 import '../../models/collection_item.dart';
 import 'coin_detail_screen.dart';
@@ -10,24 +11,20 @@ class CoinAlbumScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFF121212,
-      ), // Sayfa arka planı siyah olmasın diye güvenli koyu renk
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         title: const Text(
           "Hatıra Para Albümü",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // NOT: Firestore'daki koleksiyon adının tam olarak 'Paralar' (büyük P ile) olduğundan emin ol!
         stream: FirebaseFirestore.instance.collection('Paralar').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            // Siyah ekranda kaybolmasın diye beyaz/kırmızı hata metni
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -66,14 +63,20 @@ class CoinAlbumScreen extends StatelessWidget {
             ),
             itemCount: docs.length,
             itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
+              // 1. Dökümanın kendisini alıyoruz
+              final doc = docs[index];
+              // 2. İçindeki verileri Map olarak haritalandırıyoruz
+              final data = doc.data() as Map<String, dynamic>;
 
               int parsedYear = 2023;
               if (data['year'] != null) {
                 parsedYear = int.tryParse(data['year'].toString()) ?? 2023;
               }
 
+              // 3. Modelimizi oluştururken dökümanın ID'sini (doc.id) içeri aktarıyoruz!
               final item = CollectionItem(
+                docId: doc
+                    .id, // VEYA modelindeki isimlendirmeye göre -> docId: doc.id,
                 name: data['name'] ?? 'İsimsiz Para',
                 year: parsedYear,
                 rarity: data['rarity'] ?? 'Orta',
@@ -87,6 +90,7 @@ class CoinAlbumScreen extends StatelessWidget {
 
               return GestureDetector(
                 onTap: () {
+                  // Uyarıda bahsettiğimiz gibi CoinDetailScreen'e doğru item'ı gönderiyoruz
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -147,13 +151,9 @@ class CoinAlbumScreen extends StatelessWidget {
     );
   }
 
-  // Görsel yükleme hatasını önleyen akıllı metot
   Widget _buildItemImage(String path) {
     if (path.isEmpty) {
-      return Container(
-        color: Colors.black26,
-        child: Icon(Icons.monetization_on, color: AppColors.gold, size: 50),
-      );
+      return const _PlaceholderImage();
     }
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return Image.network(
@@ -165,9 +165,28 @@ class CoinAlbumScreen extends StatelessWidget {
         ),
       );
     }
+    if (path.startsWith('assets/')) {
+      return Image.asset(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const _PlaceholderImage(),
+      );
+    }
+    if (File(path).existsSync()) {
+      return Image.file(File(path), fit: BoxFit.cover);
+    }
+    return const _PlaceholderImage();
+  }
+}
+
+class _PlaceholderImage extends StatelessWidget {
+  const _PlaceholderImage();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       color: Colors.black26,
-      child: Icon(Icons.monetization_on, color: AppColors.gold, size: 50),
+      child: const Icon(Icons.monetization_on, color: AppColors.gold, size: 50),
     );
   }
 }

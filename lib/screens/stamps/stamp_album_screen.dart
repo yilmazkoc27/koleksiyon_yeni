@@ -19,8 +19,16 @@ class StampAlbumScreen extends StatelessWidget {
                 style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
             )
-          : ListView.builder(
-              scrollDirection: Axis.vertical,
+          : GridView.builder(
+              padding: const EdgeInsets.all(12),
+              // Yan yana 2 kart göstermek için SliverGridDelegate kullanıyoruz
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // Yan yana kaç kart olacak
+                crossAxisSpacing: 12, // Kartlar arası yatay boşluk
+                mainAxisSpacing: 12, // Kartlar arası dikey boşluk
+                childAspectRatio:
+                    0.75, // Kartların en/boy oranı (Genişlik / Yükseklik)
+              ),
               itemCount: stampList.length,
               itemBuilder: (context, index) {
                 final item = stampList[index];
@@ -35,8 +43,7 @@ class StampAlbumScreen extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    width: 250,
-                    margin: const EdgeInsets.all(12),
+                    // GridView içinde width/height zorunlu olmadığından kaldırıldı, oran childAspectRatio ile yönetiliyor
                     decoration: BoxDecoration(
                       color: AppColors.cardBlack,
                       borderRadius: BorderRadius.circular(25),
@@ -50,47 +57,87 @@ class StampAlbumScreen extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          height: 130,
-                          width: 130,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            color: Colors.black26,
-                          ),
-                          child: item.imagePath.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  // Image.file silindi, Firebase URL'leri için Image.network eklendi:
-                                  child: Image.network(
-                                    item.imagePath,
-                                    fit: BoxFit.cover,
-                                    // Resim yüklenirken bir sorun oluşursa uygulamanın çökmesini engeller
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(
-                                        Icons.broken_image,
-                                        color: Colors.redAccent,
-                                        size: 50,
-                                      );
-                                    },
+                        Expanded(
+                          // Resmin kart içinde taşmasını önler ve düzgün yayılmasını sağlar
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                              top: 12,
+                              left: 12,
+                              right: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: Colors.black26,
+                            ),
+                            child: item.imagePath.isNotEmpty
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Image.network(
+                                      item.imagePath,
+                                      fit: BoxFit.cover,
+                                      width: double
+                                          .infinity, // Kapsayıcıyı doldursun
+                                      height: double.infinity,
+                                      // Resim yüklenirken dönen yükleme ikonu:
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return const Center(
+                                              child: CircularProgressIndicator(
+                                                color: AppColors.gold,
+                                              ),
+                                            );
+                                          },
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return const Center(
+                                              child: Icon(
+                                                Icons.broken_image,
+                                                color: Colors.redAccent,
+                                                size: 40,
+                                              ),
+                                            );
+                                          },
+                                    ),
+                                  )
+                                : const Center(
+                                    child: Icon(
+                                      Icons.mail_outline,
+                                      color: AppColors.gold,
+                                      size: 50,
+                                    ),
                                   ),
-                                )
-                              : const Icon(
-                                  Icons.mail_outline,
-                                  color: AppColors.gold,
-                                  size: 90,
-                                ),
-                        ),
-                        const SizedBox(height: 15),
-                        Text(
-                          item.name,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            color: Colors.white,
                           ),
                         ),
-                        Text(
-                          "${item.value} TL",
-                          style: const TextStyle(color: AppColors.gold),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8.0,
+                            horizontal: 12.0,
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                item.name,
+                                maxLines: 1,
+                                overflow: TextOverflow
+                                    .ellipsis, // Uzun isimler kartı patlatmasın
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "${item.value} TL",
+                                style: const TextStyle(
+                                  color: AppColors.gold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),

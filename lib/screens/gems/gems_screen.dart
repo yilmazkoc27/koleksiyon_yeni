@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:koleksiyon_yeni/screens/gems/gems_detail_screen.dart';
 import 'package:path/path.dart' as p;
 import '../../core/theme/app_colors.dart';
 import '../../core/services/user_role.dart';
 import '../../models/collection_item.dart';
 import '../../core/utils/gem_value_calculator.dart';
-import '../detail/item_detail_screen.dart';
 import 'gems_album_screen.dart';
 
 class FirestoreGemModel {
@@ -765,8 +765,13 @@ class _GemsScreenState extends State<GemsScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          ItemDetailScreen(item: item),
+                                      builder: (context) => GemsDetailScreen(
+                                        // 1. Bizim üzerinde çalıştığımız ekrana yönlendiriyoruz
+                                        // 2. allGems listesindeki taşın docId'sinin dolu olduğundan copyWith ile emin oluyoruz
+                                        item: allGems[index].gem.copyWith(
+                                          docId: allGems[index].docId,
+                                        ),
+                                      ),
                                     ),
                                   );
                                 }
