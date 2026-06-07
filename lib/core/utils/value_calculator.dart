@@ -6,18 +6,12 @@ class ValueCalculator {
     required String material,
   }) {
     int value = 100;
-
-    // YIL
-
     int currentYear = 2026;
     int age = currentYear - year;
     value += age * 25;
 
-    // NADİRLİK
     Map<String, int> rarityPoints = {"Düşük": 50, "Orta": 200, "Yüksek": 600};
     value += rarityPoints[rarity] ?? 0;
-
-    // KONDİSYON
 
     Map<String, int> conditionPoints = {
       "Çil": 1000,
@@ -30,11 +24,7 @@ class ValueCalculator {
       "Orta": 150,
       "Zayıf": 30,
     };
-
     value += conditionPoints[condition] ?? 0;
-
-    // MALZEME
-
     Map<String, int> materialPoints = {
       "Altın": 12000,
       "Gümüş": 5900,
@@ -44,9 +34,7 @@ class ValueCalculator {
       "Alüminyum": 250,
       "Kâğıt": 1000,
     };
-
     value += materialPoints[material] ?? 0;
-
     return value;
   }
 }

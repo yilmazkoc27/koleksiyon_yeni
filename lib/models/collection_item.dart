@@ -29,7 +29,7 @@ class CollectionItem {
     this.isFavorite = false,
   });
 
-  // 1. Dart Nesnesini Firestore'a göndermek için Map (JSON) yapısına çevirir
+  //Dart Nesnesini Firestore'a göndermek için Map (JSON) yapısına çevirme
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -52,8 +52,7 @@ class CollectionItem {
     String? documentId,
   ]) {
     return CollectionItem(
-      docId:
-          documentId, // Gönderildiyse döküman ID'si atanır, gönderilmediyse null kalır
+      docId: documentId,
       name: map['name'] ?? '',
       year: int.tryParse(map['year']?.toString() ?? '2020') ?? 2020,
       rarity: map['rarity'] ?? 'Orta',
@@ -68,8 +67,6 @@ class CollectionItem {
       damage: map['damage'] ?? '',
     );
   }
-
-  // 3. Mevcut nesnenin değerlerini koruyarak yeni bir kopyasını üretir
   CollectionItem copyWith({
     String? docId,
     String? name,

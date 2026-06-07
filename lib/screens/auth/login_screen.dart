@@ -1,10 +1,14 @@
+// 1. KÜTÜPHANELERİ YÜKLEME
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/home_screen.dart';
 import '../../core/services/user_role.dart';
-import 'register_screen.dart'; // Kayıt ekranına geçiş için import ettik
+import 'register_screen.dart';
+
+// LOGIN SCREEN STATEFUL WIDGET TANIMLAMASI
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,16 +17,20 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+// EKRAN DURUMU VE KONTROL DEĞİŞKENLERİ
+
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>(); // Form kontrolü için key
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
-  bool _isPasswordObscure = true; // Şifre göz ikonu durum takibi
+  bool _isPasswordObscure = true;
+
+  // KULLANICI GİRİŞ İŞLEMLERİ FONKSİYONU
 
   Future<void> _handleLogin() async {
-    // 1. Form alanlarının validasyon kontrolü (Boş mu, format doğru mu)
+    // Form Validasyon Kontrolü
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -30,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 2. Firebase Auth ile giriş yapılıyor
+      // Firebase Auth ile Oturum Açma
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
             email: _emailController.text.trim(),
@@ -40,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
       String? loggedInEmail = userCredential.user?.email;
 
       if (loggedInEmail != null) {
-        // 3. Firestore'dan kullanıcının bilgilerini ve rolünü sorguluyoruz
+        // Firestore Kullanıcı Bilgileri ve Rol Sorgulama
         QuerySnapshot querySnapshot = await FirebaseFirestore.instance
             .collection('Kullanicilar')
             .where('email', isEqualTo: loggedInEmail)
@@ -50,13 +58,10 @@ class _LoginScreenState extends State<LoginScreen> {
           var userData =
               querySnapshot.docs.first.data() as Map<String, dynamic>;
           String role = userData['rol'] ?? 'user';
-          String durum =
-              userData['durum'] ??
-              'onaylandi'; // Eski kayıtlar için varsayılan onaylandı
+          String durum = userData['durum'] ?? 'onaylandi';
 
-          // ⏳ KRİTİK ONAY KONTROLÜ: Eğer kullanıcı admin değilse ve durumu 'beklemede' ise engelle
+          //  Yönetici Onay Durumu Kontrolü
           if (role != 'admin' && durum == 'beklemede') {
-            // Firebase Auth oturumunu arkada açık kalmasın diye hemen kapatıyoruz
             await FirebaseAuth.instance.signOut();
 
             if (!mounted) return;
@@ -64,13 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
               "⏳ Hesabınız henüz yönetici tarafından onaylanmamıştır.",
               Colors.orange,
             );
-            return; // Fonksiyonu burada kesip, ana sayfaya geçişi engelliyoruz
+            return;
           }
 
-          // Kontrolleri geçtiyse rol atamasını yapıyoruz
+          //  Global Rol Ataması
           UserRole.isAdmin = (role == 'admin');
         } else {
-          // Firestore'da doküman bulunamazsa güvenlik önlemi
           UserRole.isAdmin = false;
           print(
             "⚠️ Firestore'da bu e-postaya ait rol bulunamadı, varsayılan 'user' yapıldı.",
@@ -79,6 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (!mounted) return;
 
+        // Başarılı Giriş Bildirimi
         _showSnackBar(
           UserRole.isAdmin
               ? "👑 Yönetici Girişi Başarılı!"
@@ -86,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Colors.green,
         );
 
-        // Giriş başarılı olunca login ekranını tamamen kapatıp HomeScreen'e geçiyoruz
+        // Ana Sayfaya Yönlendirme ve Geçmişi Temizleme
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -94,6 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
+      // Firebase Hata Yönetimi
       String errorMessage = "Giriş başarısız oldu.";
       if (e.code == 'user-not-found') {
         errorMessage = "Bu e-posta adresine ait kullanıcı bulunamadı.";
@@ -105,8 +111,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) _showSnackBar(errorMessage, Colors.red);
     } catch (e) {
+      // Genel Sistem Hatalarının Yakalanması
       if (mounted) _showSnackBar("Sistemsel Hata: $e", Colors.orange);
     } finally {
+      // İşlem Bitiminde Yükleniyor Durumunun Kapatılması
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -114,6 +122,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
+  // BİLDİRİM MESAJI (SNACKBAR) FONKSİYONU
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -129,6 +139,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // BELLEK TEMİZLİĞİ (DISPOSE)FONKSİYONU
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -136,9 +148,11 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // ARAYÜZ TASARIMI (BUILD METODU)
+
   @override
   Widget build(BuildContext context) {
-    // Tasarımdaki ortak border tanımlamaları
+    //  Ortak Giriş Kutusu Kenarlıkları (Dekorasyon Tanımları)
     final inputBorderDecoration = OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
       borderSide: BorderSide(color: Colors.white.withAlpha(20)),
@@ -150,6 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     return Scaffold(
+      //  Arka Plan Gradyan Konteyneri
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -164,13 +179,13 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Padding(
             padding: const EdgeInsets.all(25),
             child: Center(
+              //  Klavye Açıldığında Taşmayı Önleyen Kaydırılabilir Alan
               child: SingleChildScrollView(
                 child: Form(
-                  key: _formKey, // Form takibi aktif
+                  key: _formKey,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo Alanı
                       Container(
                         height: 110,
                         width: 110,
@@ -192,13 +207,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 25),
+                      // 7e. Uygulama Başlığı ve Alt Slogan
                       const Text(
-                        "Collectify",
+                        "AntikAdam",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1,
+                          fontStyle: FontStyle.italic,
+                          fontFamily: 'Palatino',
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -212,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 50),
 
-                      // E-mail Input
+                      // E-posta Giriş Alanı
                       TextFormField(
                         controller: _emailController,
                         style: const TextStyle(color: Colors.white),
@@ -246,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Şifre Input
+                      // Şifre Giriş Alanı ve Gizle/Göster Butonu
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _isPasswordObscure,
@@ -270,7 +288,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             Icons.lock_outline_rounded,
                             color: AppColors.gold,
                           ),
-                          // Şifre Göster/Gizle Butonu
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordObscure
@@ -294,7 +311,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 40),
 
-                      // Giriş Butonu
+                      //  Giriş Butonu ve Yükleniyor Simgesi
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -332,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 25),
 
-                      // Kayıt Ekranına Yönlendirme Butonu
+                      // Kayıt Ekranına Geçiş Butonu
                       TextButton(
                         onPressed: () {
                           Navigator.push(

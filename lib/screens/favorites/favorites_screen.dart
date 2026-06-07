@@ -33,7 +33,6 @@ class FavoritesScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            // 🚨 KRİTİK DÜZELTME: Koleksiyon isimleri Firestore'dakiyle birebir aynı olmalı
             _buildFavoriteList(
               collectionName: 'Paralar',
               fallbackIcon: Icons.monetization_on,
@@ -52,7 +51,6 @@ class FavoritesScreen extends StatelessWidget {
     );
   }
 
-  // Kod tekrarını önlemek için ortak bir liste oluşturucu fonksiyon
   Widget _buildFavoriteList({
     required String collectionName,
     required IconData fallbackIcon,
@@ -96,8 +94,6 @@ class FavoritesScreen extends StatelessWidget {
           itemBuilder: (context, index) {
             final doc = docs[index];
             final dataMap = doc.data() as Map<String, dynamic>;
-
-            // Veriyi CollectionItem modeline dönüştürüyoruz (ID'si ile birlikte)
             final item = CollectionItem.fromMap(dataMap, doc.id);
 
             return Card(
@@ -108,7 +104,6 @@ class FavoritesScreen extends StatelessWidget {
                 side: BorderSide(color: AppColors.gold.withOpacity(0.1)),
               ),
               child: ListTile(
-                // Eğer resim varsa gösterir, yoksa kategoriye ait fallback ikonunu basar
                 leading: item.imagePath.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -137,7 +132,6 @@ class FavoritesScreen extends StatelessWidget {
                   color: AppColors.gold,
                 ),
                 onTap: () {
-                  // Favori ögeye tıklandığında detay ekranına uçuruyoruz
                   Navigator.push(
                     context,
                     MaterialPageRoute(

@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
 import '../../core/theme/app_colors.dart';
 import '../../models/collection_item.dart';
-import '../../core/services/user_role.dart'; // Admin kontrolü için entegre edildi
+import '../../core/services/user_role.dart';
 
 class CoinDetailScreen extends StatefulWidget {
   final CollectionItem coin;
@@ -20,7 +20,7 @@ class _CoinDetailScreenState extends State<CoinDetailScreen> {
   bool _isBidLoading = false;
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-  // Maskeleme Fonksiyonu: Sunumda kullanıcı e-postalarını şık gizlemek için
+  // Maskeleme Fonksiyonu: Sunumda kullanıcı e-postalarını gizlemeye yarar.
   String _maskEmail(String? email) {
     if (email == null || !email.contains('@')) return 'Bilinmeyen Kullanıcı';
     final parts = email.split('@');
@@ -28,7 +28,7 @@ class _CoinDetailScreenState extends State<CoinDetailScreen> {
     return "${parts[0][0]}***@${parts[1]}";
   }
 
-  // 🔥 Teklif Verme Fonksiyonu
+  //  Teklif Verme Fonksiyonu
   Future<void> _placeBid() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -93,7 +93,7 @@ class _CoinDetailScreenState extends State<CoinDetailScreen> {
     }
   }
 
-  // 🗑️ Teklif Silme Fonksiyonu
+  //  Teklif Silme Fonksiyonu
   Future<void> _deleteBid(String bidId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -141,7 +141,7 @@ class _CoinDetailScreenState extends State<CoinDetailScreen> {
     }
   }
 
-  // ✏️ Teklif Düzenleme (Güncelleme) Fonksiyonu
+  //  Teklif Düzenleme (Güncelleme) Fonksiyonu
   void _editBid(String bidId, double currentAmount) {
     final TextEditingController editController = TextEditingController(
       text: currentAmount.toStringAsFixed(0),
@@ -508,7 +508,7 @@ class _CoinDetailScreenState extends State<CoinDetailScreen> {
                           SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              "Veritabanı Hatası: 'docId' eksik. Lütfen listeleme ekranından ID'nin doğru taşındığından emin olun.",
+                              "Veritabanı Hatası: 'docId' eksik.",
                               style: TextStyle(
                                 color: AppColors.error,
                                 fontSize: 13,

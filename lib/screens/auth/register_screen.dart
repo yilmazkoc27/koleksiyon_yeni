@@ -1,8 +1,12 @@
+// KÜTÜPHANELERİN YÜKLENMESİ
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/user_role.dart';
+
+// REGISTER SCREEN STATEFUL WIDGET TANIMLAMASI
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -10,6 +14,8 @@ class RegisterScreen extends StatefulWidget {
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
+
+// EKRAN DURUMU VE KONTROL DEĞİŞKENLERİ
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
@@ -22,8 +28,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isPasswordObscure = true;
   bool _isConfirmPasswordObscure = true;
 
+  // YENİ KULLANICI KAYIT İŞLEMLERİ FONKSİYONU
+
   Future<void> _handleRegister() async {
-    // 1. Form alanlarının doğruluğunu kontrol ediyoruz
+    // Form Validasyon Kontrolü
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -31,33 +39,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      // 2. Firebase Auth ile yeni kullanıcı kaydı oluşturuluyor
+      // Firebase Auth ile Yeni Hesap Oluşturma
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
           );
 
-      // 3. Kullanıcı başarıyla oluştuktan sonra Firestore kaydı yapılıyor
+      // Firestore Veritabanına Kayıt Ekleme
       if (userCredential.user != null) {
         String uid = userCredential.user!.uid;
 
         // Doküman ID'sini doğrudan kullanıcının benzersiz UID'si yapıyoruz
-        await FirebaseFirestore.instance.collection('Kullanicilar').doc(uid).set({
-          'uid': uid,
-          'email': _emailController.text.trim(),
-          'rol': 'user', // Yeni kayıt olan herkes standart kullanıcıdır
-          'durum':
-              'beklemede', // ⏳ KRİTİK: Giriş yapabilmek için admin onayı gerekecek
-          'kayitTarihi': FieldValue.serverTimestamp(),
-        });
+        await FirebaseFirestore.instance
+            .collection('Kullanicilar')
+            .doc(uid)
+            .set({
+              'uid': uid,
+              'email': _emailController.text.trim(),
+              'rol': 'user', // Yeni kayıt olan herkes standart kullanıcıdır
+              'durum':
+                  'beklemede', //Giriş yapabilmek için admin onayı gerekecek
+              'kayitTarihi': FieldValue.serverTimestamp(),
+            });
 
-        // Yeni kayıt olan kullanıcı direkt içeri alınmayacağı için rolünü güvenceye alıyoruz
         UserRole.isAdmin = false;
 
         if (!mounted) return;
 
-        // Kullanıcıya bilgi veriyoruz
+        // Kullanıcıyı Bilgilendirme
         _showSnackBar(
           "🎉 Kayıt başarılı! Hesabınız yönetici onayından sonra aktif olacaktır.",
           Colors.orange,
@@ -70,6 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
+      // Firebase Kayıt Hatalarının Yakalanması
       String errorMessage = "Kayıt işlemi başarısız oldu.";
       if (e.code == 'weak-password') {
         errorMessage =
@@ -83,8 +94,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (mounted) _showSnackBar(errorMessage, Colors.red);
     } catch (e) {
+      // Genel Sistem Hatalarının Yakalanması
       if (mounted) _showSnackBar("Sistemsel bir hata oluştu: $e", Colors.red);
     } finally {
+      // İşlem Sonunda Yüklenme Animasyonunun Kapatılması
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -92,6 +105,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     }
   }
+
+  //BİLDİRİM MESAJI (SNACKBAR) FONKSİYONU
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -107,6 +122,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // BELLEK TEMİZLİĞİ (DISPOSE) FONKSİYONU
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -115,9 +132,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // ARAYÜZ TASARIMI (BUILD METODU)
+
   @override
   Widget build(BuildContext context) {
-    // Tasarımdaki input border stillerini ortaklaştırıyoruz
+    //  Ortak Giriş Kutusu Kenarlıkları
     final inputBorderDecoration = OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
       borderSide: BorderSide(color: Colors.white.withAlpha(20)),
@@ -129,6 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     return Scaffold(
+      //Üst Menü Çubuğu (AppBar) ve Geri Dönüş Butonu
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
@@ -141,6 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      //Arka Plan Gradyan Konteyneri
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -155,13 +176,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 25),
             child: Center(
+              // Klavye Açıldığında Taşmayı Önleyen Kaydırılabilir Alan
               child: SingleChildScrollView(
                 child: Form(
-                  key: _formKey, // Validasyon takibi
+                  key: _formKey,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Başlık Alanı
+                      // Ekran Başlıkları
                       const Text(
                         "Yeni Hesap Oluştur",
                         style: TextStyle(
@@ -172,12 +194,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 10),
                       const Text(
-                        "Collectify dünyasına katılın ve onay bekleyin",
+                        "AntikAdam dünyasına katılın ve onay bekleyin",
                         style: TextStyle(color: Colors.white38, fontSize: 14),
                       ),
                       const SizedBox(height: 40),
 
-                      // E-mail Input
+                      // E-posta Giriş Alanı
                       TextFormField(
                         controller: _emailController,
                         style: const TextStyle(color: Colors.white),
@@ -208,7 +230,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Şifre Input
+                      // Birinci Şifre Giriş Alanı ve Gizle/Göster Butonu
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _isPasswordObscure,
@@ -252,7 +274,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Şifre Tekrar Input
+                      // Şifre Onay Alanı ve Eşleşme Kontrolü
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: _isConfirmPasswordObscure,
@@ -297,7 +319,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 40),
 
-                      // Kayıt Ol Butonu
+                      // Kayıt Butonu ve Yükleniyor Simgesi
                       SizedBox(
                         width: double.infinity,
                         height: 56,

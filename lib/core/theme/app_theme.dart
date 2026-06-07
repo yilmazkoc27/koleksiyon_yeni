@@ -4,16 +4,11 @@ import 'app_colors.dart';
 class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
-      // ✨ Material 3 standartlarını etkinleştiriyoruz
       useMaterial3: true,
       brightness: Brightness.dark,
-
-      // 🎨 Genel Renk Şeması Entegrasyonu
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.gold,
       cardColor: AppColors.surface,
-
-      // 🔮 Renk Paleti Eşleşmesi (M3 Bileşenleri İçin)
       colorScheme: const ColorScheme.dark(
         primary: AppColors.gold,
         secondary: AppColors.softGold,
@@ -21,8 +16,6 @@ class AppTheme {
         onSurface: AppColors.textPrimary,
         error: AppColors.error,
       ),
-
-      // 🏛️ Üst Bar (AppBar) Tasarımı
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -37,9 +30,6 @@ class AppTheme {
           letterSpacing: 0.5,
         ),
       ),
-
-      // 📝 Gelişmiş Tipografi (TextTheme)
-      // Yazılardaki keskin beyazlığı kırıp hiyerarşi oluşturuyoruz
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
           color: AppColors.textPrimary,
@@ -65,8 +55,6 @@ class AppTheme {
         bodyMedium: TextStyle(color: AppColors.textSecondary, fontSize: 13),
         labelSmall: TextStyle(color: AppColors.textMuted, fontSize: 11),
       ),
-
-      // 👑 Premium Buton Teması (ElevatedButton)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.gold,
@@ -80,15 +68,10 @@ class AppTheme {
             letterSpacing: 0.5,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              14,
-            ), // M3 standartlarına uygun şık kıvrım
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),
-
-      // 📥 Metin Giriş Kutuları Teması (InputDecoration)
-      // Giriş yapma ve Teklif verme kutularını otomatik asilleştirir
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceVariant,
@@ -114,16 +97,12 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
       ),
-
-      // 🗂️ Açılır Kart Teması (ExpansionTile / ListTile)
-      // Teklifler sayfasındaki kartların tıklama ve açılma efektleri merkezileştirildi
       listTileTheme: ListTileThemeData(
         tileColor: AppColors.surface,
         iconColor: AppColors.gold,
         textColor: AppColors.textPrimary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-
       expansionTileTheme: ExpansionTileThemeData(
         backgroundColor: AppColors.surface,
         collapsedBackgroundColor: AppColors.surface,

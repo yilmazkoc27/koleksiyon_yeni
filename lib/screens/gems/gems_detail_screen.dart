@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/collection_item.dart';
-import '../../core/services/user_role.dart'; // Admin kontrolü için eklendi
+import '../../core/services/user_role.dart';
 
 class GemsDetailScreen extends StatefulWidget {
   final CollectionItem item;
@@ -19,7 +19,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
   bool _isBidLoading = false;
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-  // Maskeleme Fonksiyonu: Sunumda kullanıcı e-postalarını şık gizlemek için
+  // Maskeleme Fonksiyonu:kullanıcı e-postalarını gizleme
   String _maskEmail(String? email) {
     if (email == null || !email.contains('@')) return 'Bilinmeyen Kullanıcı';
     final parts = email.split('@');
@@ -27,7 +27,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
     return "${parts[0][0]}***@${parts[1]}";
   }
 
-  // 🔥 Teklif Verme Fonksiyonu
+  //Teklif Verme Fonksiyonu
   Future<void> _placeBid() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -88,7 +88,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
     }
   }
 
-  // 🗑️ Teklif Silme Fonksiyonu
+  // Teklif Silme Fonksiyonu
   Future<void> _deleteBid(String bidId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -136,7 +136,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
     }
   }
 
-  // ✏️ Teklif Düzenleme (Güncelleme) Fonksiyonu
+  // Teklif Düzenleme (Güncelleme) Fonksiyonu
   void _editBid(String bidId, double currentAmount) {
     final TextEditingController editController = TextEditingController(
       text: currentAmount.toStringAsFixed(0),
@@ -327,7 +327,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
                     ),
             ),
 
-            // 🏛️ BİLGİ VE DETAYLAR ALANI
+            // BİLGİ VE DETAYLAR ALANI
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -388,7 +388,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
 
                   const SizedBox(height: 35),
 
-                  // 👑 TEKLİF & DEĞERLEME LİSTESİ ALANI
+                  // TEKLİF & DEĞERLEME LİSTESİ ALANI
                   const Text(
                     "Verilen Teklifler ve Değerlemeler",
                     style: TextStyle(
@@ -482,7 +482,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
                               final double amount =
                                   (bidData['teklifMiktari'] ?? 0.0).toDouble();
 
-                              // 🔑 Korumalı yetki kontrolü: Teklif sahibi mi veya Admin mi?
+                              // Korumalı yetki kontrolü: Teklif sahibi mi veya Admin mi?
                               final bool isOwnerOrAdmin =
                                   (_currentUserId == bidUserUid) ||
                                   UserRole.isAdmin;
@@ -529,7 +529,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
                                       ),
                                       if (isOwnerOrAdmin) ...[
                                         const SizedBox(width: 8),
-                                        // ✏️ Sadece teklif sahibi güncelleyebilir
+                                        // Sadece teklif sahibi güncelleyebilir
                                         if (isOnlyOwner)
                                           IconButton(
                                             icon: const Icon(
@@ -544,7 +544,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
                                           ),
                                         if (isOnlyOwner)
                                           const SizedBox(width: 10),
-                                        // 🗑️ Teklif sahibi veya Admin silebilir
+                                        // Teklif sahibi veya Admin silebilir
                                         IconButton(
                                           icon: const Icon(
                                             Icons.delete_outline_rounded,
@@ -569,7 +569,6 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
 
                   const SizedBox(height: 25),
 
-                  // ✍️ YENİ TEMA UYUMLU TEKLİF GİRİŞ ALANI
                   Padding(
                     padding: const EdgeInsets.only(bottom: 30),
                     child: Row(

@@ -1,5 +1,15 @@
+// ==========================================
+// 📄 DOSYA: lib/home/home_screen.dart
+// ==========================================
+
+// 📦 KÜTÜPHANE VE DOSYA BAĞLANTILARI
+// Projede zaman zaman tekrarlanan görevler (Timer) için Dart'ın asenkron kütüphanesi yüklenir.
 import 'dart:async';
 import 'package:flutter/material.dart';
+
+// 📂 DİĞER EKRANLARIN VE MODÜLLERİN DOSYA BAĞLANTILARI
+// Ana sayfadan yönlendirme yapılacak olan alt koleksiyon ekranları,
+// premium renk paleti (AppColors) ve rol tabanlı yetkilendirme servisi projeye dahil edilir.
 import 'package:koleksiyon_yeni/screens/gems/gems_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../coins/coin_screen.dart';
@@ -9,13 +19,18 @@ import '../favorites/favorites_screen.dart';
 import '../statistics/bids_list_screen.dart';
 import '../../core/services/user_role.dart';
 
-// 🔄 Not: Finans servisi importu kodunda eksikti, hata vermemesi için buraya mock bir servis ekledik.
+// 📈 VERİ SERVİSİ: FİNANSAL VERİLER
+// Uygulamanın üst kısmında akan borsa şeridi için anlık döviz ve altın fiyatlarını
+// asenkron bir şekilde getiren (simüle eden) statik servis sınıfıdır.
 class FinanceService {
   static Future<Map<String, double>> fetchLiveRates() async {
     return {'USD': 46.50, 'EUR': 54.20, 'GOLD': 6650.0};
   }
 }
 
+// 🏠 ANA EKRAN YAPISI (StatefulWidget)
+// Borsa şeridindeki kaydırma efektleri ve dinamik arayüz güncellemeleri için
+// durumu (state) kendi içinde yönetebilen ana görünüm bileşenidir.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -23,10 +38,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+// 🧠 ANA EKRANIN DURUM (STATE) YÖNETİM MERKEZİ
 class _HomeScreenState extends State<HomeScreen> {
+  // 🕹️ Otomatik kaydırma mekanizmasını ve zamanlayıcıyı kontrol eden yerel değişkenler.
   final ScrollController _scrollController = ScrollController();
   Timer? _timer;
 
+  // 🏁 EKRAN BAŞLATILIRKEN ÇALIŞAN KISIM (initState)
+  // Ekran belleğe yüklendiği an ilk kare çizildikten sonra otomatik kaydırma motorunu tetikler.
   @override
   void initState() {
     super.initState();
@@ -35,6 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // 🔄 OTOMATİK KAYDIRMA MOTORU (Borsa Şeridi İçin)
+  // Her 30 milisaniyede bir borsa şeridini 1 piksel sağa kaydırır.
+  // Şerit sona ulaştığında pürüzsüz bir şekilde başa (`0` konumuna) sarar.
   void _startScrolling() {
     _timer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
       if (_scrollController.hasClients) {
@@ -50,6 +72,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // 🛑 BELLEK TEMİZLEME MERKEZİ (dispose)
+  // Sayfa kapatıldığında arka planda çalışan zamanlayıcıyı (Timer) durdurur ve
+  // kaydırma kontrolcüsünü bellekten silerek "Memory Leak" (Bellek Sızıntısı) oluşmasını engeller.
   @override
   void dispose() {
     _timer?.cancel();
@@ -57,24 +82,28 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // 🎨 GÖRSEL ARAYÜZÜN İNŞA ALANI (build)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          AppColors.background, // 🎨 Merkezi arka plan rengi entegre edildi
+      backgroundColor: AppColors.background, // Uygulama arka plan rengi
+      // 📌 ÜST BAŞLIK ÇUBUĞU (AppBar)
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          "Collectify",
+          "AntikAdam",
           style: TextStyle(
             color: AppColors.gold,
             fontWeight: FontWeight.w900,
             fontSize: 26,
             letterSpacing: 1.2,
+            fontStyle: FontStyle.italic,
+            fontFamily: 'Palatino',
           ),
         ),
         actions: [
+          // 👤 KULLANICI PROFİL İKONU VE GÖRSEL DEKORASYONU
           Padding(
             padding: const EdgeInsets.only(right: 15),
             child: Container(
@@ -92,17 +121,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               child: const CircleAvatar(
-                backgroundColor: AppColors
-                    .surface, // 🎨 Sabit renk yerine temadaki surface kullanıldı
+                backgroundColor: AppColors.surface,
                 child: Icon(Icons.person, color: AppColors.gold),
               ),
             ),
           ),
         ],
       ),
+
+      // 🌌 ANA GÖVDE KATMANLARI (Stack)
+      // Arka plana dairesel premium ışık süzmeleri (ambient light effect) eklemek
+      // ve üzerine ana elementleri dizmek için üst üste binen katman yapısı kurulmuştur.
       body: Stack(
         children: [
-          // Arka plan Işıltıları (Glow)
+          // 🟡 Sol Üst Işık Efekti
           Positioned(
             top: -100,
             left: -50,
@@ -116,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          // 🟡 Sağ Alt Işık Efekti
           Positioned(
             bottom: 150,
             right: -100,
@@ -124,18 +157,18 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.gold.withAlpha(
-                  15,
-                ), // 🎨 Turuncu yerine premium bütünlük için gold parlaması yapıldı
+                color: AppColors.gold.withAlpha(15),
               ),
             ),
           ),
 
-          // Ana İçerik Tasarımı
+          // 🗂️ ANA İÇERİK SÜTUNU (Döviz şeridi ve Koleksiyon Kartları)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- BORSA ŞERİDİ ---
+              // 📊 GELECEK TABANLI VERİ İNŞAATÇISI (FutureBuilder — BORSA ŞERİDİ)
+              // Finans servisinden canlı verileri asenkron bekler. Veri yüklenene kadar
+              // veya hata durumunda varsayılan (safeguard) borsa kurlarını ekrana basar.
               FutureBuilder<Map<String, double>>(
                 future: FinanceService.fetchLiveRates(),
                 builder: (context, snapshot) {
@@ -143,19 +176,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       snapshot.data ??
                       {'USD': 46.5, 'EUR': 54.2, 'GOLD': 6650.0};
 
+                  // Döviz metin şeridinin hazırlanması
                   String tickerText =
                       "🇺🇸 USD: ${rates['USD']!.toStringAsFixed(2)} TL    •    "
                       "🇪🇺 EUR: ${rates['EUR']!.toStringAsFixed(2)} TL    •    "
                       "🟡 GRAM ALTIN: ${rates['GOLD']!.toStringAsFixed(0)} TL    •    ";
 
+                  // Şeridin sonsuz döngüde gibi görünmesi için metin 12 kere yan yana çoğaltılır.
                   String repeatedText = tickerText * 12;
 
                   return Container(
                     width: double.infinity,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: AppColors
-                          .surface, // 🎨 Arka plan şeridi temaya bağlandı
+                      color: AppColors.surface,
                       border: Border.symmetric(
                         horizontal: BorderSide(
                           color: AppColors.gold.withAlpha(40),
@@ -163,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
+                    // Kullanıcı parmağıyla kaydıramasın diye fizikleri kapatılmış yatay kaydırma çubuğu
                     child: SingleChildScrollView(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
@@ -173,10 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           horizontal: 10,
                         ),
                         child: Text(
-                          repeatedText, // 1. Ana metin en başa alındı
+                          repeatedText,
                           textWidthBasis: TextWidthBasis.parent,
                           style: const TextStyle(
-                            // 2. const kelimesi sadece TextStyle'ın başına alındı
                             color: AppColors.textSecondary,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -189,51 +223,39 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
 
-              // İçeriğin Geri Kalanı
+              // 🎴 MENÜ KARTLARI VE BANNER ALANI
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Karşılama Başlığı
+                      // 👋 Karşılama Başlığı (Akademik Palatino Fontu ile)
                       Row(
                         children: [
                           Text(
-                            "Hoş Geldiniz",
+                            "Hoş Geldiniz...",
                             style: Theme.of(context).textTheme.headlineLarge
                                 ?.copyWith(
-                                  fontWeight: FontWeight
-                                      .bold, // 🎨 Temadaki büyük başlık stiline bağlandı
+                                  fontWeight: FontWeight.w100,
+                                  fontStyle: FontStyle.italic,
+                                  fontFamily: 'Palatino',
                                 ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            "👋",
-                            style: TextStyle(
-                              fontSize: 24,
-                              shadows: [
-                                Shadow(
-                                  color: AppColors.gold.withAlpha(100),
-                                  blurRadius: 10,
-                                ),
-                              ],
-                            ),
                           ),
                         ],
                       ),
                       const Text(
-                        "Nadir parçalarınızı keşfedin ve yönetin.",
+                        "Koleksiyon Dünyasına Giriş Yaptınız....",
                         style: TextStyle(
-                          color: AppColors
-                              .textMuted, // 🎨 Sönük yazı rengine bağlandı
+                          color: AppColors.textMuted,
                           fontSize: 13,
                           letterSpacing: 0.5,
+                          fontFamily: 'Georgia',
                         ),
                       ),
                       const SizedBox(height: 20),
 
-                      // Premium Üst Banner
+                      // 🎫 PREMİUM ÜST BANNER (Görsel Marka Kimliği alanı)
                       Container(
                         width: double.infinity,
                         height: 125,
@@ -247,9 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              AppColors.surfaceVariant.withAlpha(
-                                200,
-                              ), // 🎨 Kart degrade geçişleri AppColors'a senkronize edildi
+                              AppColors.surfaceVariant.withAlpha(200),
                               AppColors.surface.withAlpha(240),
                               AppColors.surfaceVariant.withAlpha(150),
                             ],
@@ -291,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                     child: const Text(
-                                      "PREMIUM PRESTİJ PANELİ",
+                                      "PREMİUM KOLEKSİYON DÜNYASI",
                                       style: TextStyle(
                                         color: AppColors.gold,
                                         fontSize: 9,
@@ -304,8 +324,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   const Text(
                                     "KOÇ KOLEKSİYON",
                                     style: TextStyle(
-                                      color: AppColors
-                                          .textPrimary, // 🎨 Birincil metin rengi
+                                      color: AppColors.textPrimary,
+                                      fontFamily: 'Times New Roman',
                                       fontSize: 24,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 2,
@@ -328,26 +348,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 25),
 
-                      // Menü Başlığı
+                      // 🏷️ Altı Çizili Bölüm Başlığı
                       const Text(
                         "Koleksiyon Galerisi",
                         style: TextStyle(
-                          color: AppColors
-                              .textPrimary, // 🎨 Galeri başlığı daha okunaklı yapıldı
+                          color: AppColors.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
+                          height: 1.5,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.gold,
+                          decorationThickness: 2,
                         ),
                       ),
                       const SizedBox(height: 15),
 
-                      // Grid Kartları
+                      // IZGARA PANELİ (GridView — MENÜ KARTLARI)
                       Expanded(
                         child: GridView.count(
                           crossAxisCount: 2,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          childAspectRatio: 1.12,
+                          childAspectRatio:
+                              1.12, // Kartların en-boy oranı dengesi
                           children: [
                             buildCard(
                               context,
@@ -361,7 +385,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icons.diamond_rounded,
                             ),
 
-                            // Admin Kontrol Paneli Kartı
+                            //ADMİN / YÖNETİCİ KONTROL SORGUSU
                             UserRole.isAdmin
                                 ? buildCard(
                                     context,
@@ -380,7 +404,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               "Teklifler",
                               Icons.gavel_rounded,
                             ),
-
                             buildCard(
                               context,
                               "Favoriler",
@@ -400,6 +423,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  //YARDIMCI METOT: DİNAMİK KART OLUŞTURUCU (buildCard)
+
   Widget buildCard(
     BuildContext context,
     String title,
@@ -407,6 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isAdminCard = false,
   }) {
     return GestureDetector(
+      //  DİNAMİK SAYFA YÖNLENDİRME MERKEZİ (Navigation Map)
       onTap: () {
         if (title == "Hatıra Para") {
           Navigator.push(
@@ -445,12 +471,11 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       },
+      // KARTIN GÖRSEL KUTU TASARIMI (BoxDecoration)
       child: Container(
         decoration: BoxDecoration(
           color: isAdminCard
-              ? AppColors.surfaceVariant.withAlpha(
-                  220,
-                ) // 🎨 Kart renkleri AppColors yüzey renklerine taşındı
+              ? AppColors.surfaceVariant.withAlpha(220)
               : AppColors.surface.withAlpha(200),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
@@ -467,6 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+        // KART İÇERİĞİ
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -475,8 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: isAdminCard
                     ? AppColors.gold.withAlpha(30)
-                    : AppColors
-                          .surfaceVariant, // 🎨 Sabit renk yerine katman uyumu için surfaceVariant atandı
+                    : AppColors.surfaceVariant,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isAdminCard
@@ -492,10 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title,
               style: TextStyle(
                 fontSize: 15,
-                color: isAdminCard
-                    ? AppColors.gold
-                    : AppColors
-                          .textPrimary, // 🎨 Başlıklar birincil yazı rengine senkronize edildi
+                color: isAdminCard ? AppColors.gold : AppColors.textPrimary,
                 fontWeight: isAdminCard ? FontWeight.w900 : FontWeight.w600,
                 letterSpacing: 0.3,
               ),

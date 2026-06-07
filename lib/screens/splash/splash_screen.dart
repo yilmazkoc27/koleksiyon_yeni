@@ -74,25 +74,29 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 40),
 
             const Text(
-              "COLLECTIFY",
+              "ANTİKADAM",
 
               style: TextStyle(
                 fontSize: 30,
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-
                 letterSpacing: 3,
+                fontStyle: FontStyle.italic,
+                fontFamily: 'Palatino',
               ),
             ),
 
             const SizedBox(height: 15),
 
             Text(
-              "Koleksiyonların\nDeğeri Burada",
-
+              "Koleksiyon için,\nİyi bir başlangıç...",
               textAlign: TextAlign.center,
-
-              style: TextStyle(color: Colors.grey[400], fontSize: 16),
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 16,
+                fontStyle: FontStyle.italic,
+                fontFamily: 'Palatino',
+              ),
             ),
 
             const SizedBox(height: 60),

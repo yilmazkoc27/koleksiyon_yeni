@@ -63,20 +63,15 @@ class CoinAlbumScreen extends StatelessWidget {
             ),
             itemCount: docs.length,
             itemBuilder: (context, index) {
-              // 1. Dökümanın kendisini alıyoruz
               final doc = docs[index];
-              // 2. İçindeki verileri Map olarak haritalandırıyoruz
               final data = doc.data() as Map<String, dynamic>;
 
               int parsedYear = 2023;
               if (data['year'] != null) {
                 parsedYear = int.tryParse(data['year'].toString()) ?? 2023;
               }
-
-              // 3. Modelimizi oluştururken dökümanın ID'sini (doc.id) içeri aktarıyoruz!
               final item = CollectionItem(
-                docId: doc
-                    .id, // VEYA modelindeki isimlendirmeye göre -> docId: doc.id,
+                docId: doc.id,
                 name: data['name'] ?? 'İsimsiz Para',
                 year: parsedYear,
                 rarity: data['rarity'] ?? 'Orta',
@@ -90,7 +85,6 @@ class CoinAlbumScreen extends StatelessWidget {
 
               return GestureDetector(
                 onTap: () {
-                  // Uyarıda bahsettiğimiz gibi CoinDetailScreen'e doğru item'ı gönderiyoruz
                   Navigator.push(
                     context,
                     MaterialPageRoute(
