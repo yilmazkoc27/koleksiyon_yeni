@@ -7,7 +7,6 @@ import '../../core/theme/app_colors.dart';
 import '../../models/collection_item.dart';
 
 // --- ENTEGRE FİNANS SERVİSİ ---
-
 class FinanceService {
   static const String _apiUrl = "https://open.er-api.com/v6/latest/USD";
 
@@ -32,12 +31,10 @@ class FinanceService {
           double onsPriceUsd = 1 / usdToXau;
           double hesaplananAltin = (onsPriceUsd / 31.1035) * usdToTry;
 
-          // Hesaplanan değer mantıklı bir gram altın fiyatıysa (örn: 1000 TL'den büyükse) onu kullan
           if (hesaplananAltin > 1000) {
             gramGoldToTry = hesaplananAltin;
           }
         }
-
         return {'USD': usdToTry, 'EUR': eurToTry, 'GOLD': gramGoldToTry};
       }
       throw Exception("Kurlar alınamadı");
@@ -150,7 +147,6 @@ class StatisticsScreen extends StatelessWidget {
           if (totalValue >= 50000) achievements.add("💰 Zengin Koleksiyon");
           if (favorites >= 10) achievements.add("❤️ Favori Ustası");
 
-          // İç içe veri akışı: Koleksiyon verisi gelince Canlı Döviz Kurunu çeker
           return FutureBuilder<Map<String, double>>(
             future: FinanceService.fetchLiveRates(),
             builder: (context, financeSnapshot) {
@@ -223,8 +219,7 @@ class StatisticsScreen extends StatelessWidget {
                         border: Border.all(color: Colors.white10),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment
-                            .spaceBetween, // Kenarlara dengeli dağıtması için değiştirdik
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // 1. Eleman: USD
                           Expanded(
@@ -244,8 +239,6 @@ class StatisticsScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-
-                          // 2. Eleman: EUR
                           Expanded(
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
@@ -263,8 +256,6 @@ class StatisticsScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-
-                          // 3. Eleman: GRAM ALTIN (Artık diğerleriyle eşit hakka sahip)
                           Expanded(
                             child: FittedBox(
                               fit: BoxFit.scaleDown,

@@ -43,7 +43,6 @@ class StampAlbumScreen extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    // GridView içinde width/height zorunlu olmadığından kaldırıldı, oran childAspectRatio ile yönetiliyor
                     decoration: BoxDecoration(
                       color: AppColors.cardBlack,
                       borderRadius: BorderRadius.circular(25),
@@ -75,8 +74,7 @@ class StampAlbumScreen extends StatelessWidget {
                                     child: Image.network(
                                       item.imagePath,
                                       fit: BoxFit.cover,
-                                      width: double
-                                          .infinity, // Kapsayıcıyı doldursun
+                                      width: double.infinity,
                                       height: double.infinity,
                                       // Resim yüklenirken dönen yükleme ikonu:
                                       loadingBuilder:

@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/collection_item.dart';
-import '../../core/services/user_role.dart'; // Admin kontrolü için entegre edildi
+import '../../core/services/user_role.dart';
 
 class StampDetailScreen extends StatefulWidget {
   final CollectionItem item;
@@ -19,7 +19,6 @@ class _StampDetailScreenState extends State<StampDetailScreen> {
   bool _isBidLoading = false;
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-  // Maskeleme Fonksiyonu: Sunumda kullanıcı e-postalarını şık gizlemek için
   String _maskEmail(String? email) {
     if (email == null || !email.contains('@')) return 'Bilinmeyen Kullanıcı';
     final parts = email.split('@');
@@ -27,7 +26,7 @@ class _StampDetailScreenState extends State<StampDetailScreen> {
     return "${parts[0][0]}***@${parts[1]}";
   }
 
-  // 🔥 Teklif Verme Fonksiyonu
+  // Teklif Verme Fonksiyonu
   Future<void> _placeBid() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -90,7 +89,7 @@ class _StampDetailScreenState extends State<StampDetailScreen> {
     }
   }
 
-  // 🗑️ Teklif Silme Fonksiyonu
+  // Teklif Silme Fonksiyonu
   Future<void> _deleteBid(String bidId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -138,7 +137,7 @@ class _StampDetailScreenState extends State<StampDetailScreen> {
     }
   }
 
-  // ✏️ Teklif Düzenleme (Güncelleme) Fonksiyonu
+  // Teklif Düzenleme (Güncelleme) Fonksiyonu
   void _editBid(String bidId, double currentAmount) {
     final TextEditingController editController = TextEditingController(
       text: currentAmount.toStringAsFixed(0),
@@ -284,7 +283,6 @@ class _StampDetailScreenState extends State<StampDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // BÜYÜK FOTOĞRAF ALANI
             Container(
               height: 300,
               width: double.infinity,
@@ -413,7 +411,7 @@ class _StampDetailScreenState extends State<StampDetailScreen> {
                         ),
                       ),
                       child: const Text(
-                        "⚠️ Veritabanı Hatası: 'docId' değeri boş geliyor. Listeleme sayfasından bu ID'nin doldurulduğundan emin olun!",
+                        "⚠️ Veritabanı Hatası: 'docId'!",
                         style: TextStyle(
                           color: AppColors.error,
                           fontSize: 13,

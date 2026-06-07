@@ -9,7 +9,6 @@ import '../../models/collection_item.dart';
 import '../../core/services/user_role.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-// ESKİ YÖNLENDİRME DEĞİŞTİ: Artık pullar için özel hazırladığın detay sayfasına gidiyoruz!
 import 'stamp_detail_screen.dart';
 
 class FirestoreStampModel {
@@ -92,7 +91,6 @@ class _StampScreenState extends State<StampScreen> {
       if (selectedImage != null) {
         uploadedUrl = await _uploadImageToStorage(selectedImage!);
       }
-
       int year = int.tryParse(yearController.text) ?? 2023;
 
       await FirebaseFirestore.instance.collection('Pullar').add({
@@ -655,15 +653,11 @@ class _StampScreenState extends State<StampScreen> {
                                     selectedImage = null;
                                   });
                                 } else {
-                                  // PARANTEZ HATASI BURADA DÜZELTİLDİ:
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => StampDetailScreen(
-                                        item: item.copyWith(
-                                          docId:
-                                              docId, // Buradaki yerel 'docId' değişkenini paslıyoruz.
-                                        ),
+                                        item: item.copyWith(docId: docId),
                                       ),
                                     ),
                                   );

@@ -52,7 +52,6 @@ class _GemsScreenState extends State<GemsScreen> {
   String colorQuality = "Normal";
   String processType = "Ham Taş";
   String damage = "Yok";
-
   String filterRarity = "Tümü";
 
   @override
@@ -100,14 +99,12 @@ class _GemsScreenState extends State<GemsScreen> {
       currentImageUrl = "";
       descriptionController.clear();
       caratController.text = "1.0";
-
       gemType = "Akik";
       rarity = "Orta";
       clarity = "İyi";
       colorQuality = "Normal";
       processType = "Ham Taş";
       damage = "Yok";
-
       estimatedValue = 0;
     });
   }
@@ -258,7 +255,7 @@ class _GemsScreenState extends State<GemsScreen> {
 
                 List<FirestoreGemModel> filteredList = List.from(allGems);
 
-                // ARAMA MANTIĞI
+                // ARAMA
                 if (searchController.text.isNotEmpty) {
                   filteredList = filteredList.where((item) {
                     return item.gem.name.toLowerCase().contains(
@@ -267,14 +264,14 @@ class _GemsScreenState extends State<GemsScreen> {
                   }).toList();
                 }
 
-                // FİLTRELEME MANTIĞI
+                // FİLTRELEME
                 if (filterRarity != "Tümü") {
                   filteredList = filteredList.where((item) {
                     return item.gem.rarity == filterRarity;
                   }).toList();
                 }
 
-                // SIRALAMA MANTIĞI
+                // SIRALAMA
                 filteredList.sort(
                   (a, b) => ascending
                       ? a.gem.value.compareTo(b.gem.value)
@@ -285,7 +282,6 @@ class _GemsScreenState extends State<GemsScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      // En Üstteki Diamond Container Görseli
                       Container(
                         height: 170,
                         width: double.infinity,
@@ -766,8 +762,6 @@ class _GemsScreenState extends State<GemsScreen> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => GemsDetailScreen(
-                                        // 1. Bizim üzerinde çalıştığımız ekrana yönlendiriyoruz
-                                        // 2. allGems listesindeki taşın docId'sinin dolu olduğundan copyWith ile emin oluyoruz
                                         item: allGems[index].gem.copyWith(
                                           docId: allGems[index].docId,
                                         ),

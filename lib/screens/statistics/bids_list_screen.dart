@@ -22,13 +22,11 @@ class _BidsListScreenState extends State<BidsListScreen> {
     'Taşlar': 'gems', // Veritabanındaki ismi 'gems'
   };
 
-  // Tüm koleksiyonlardaki 'Teklifler' alt koleksiyonlarını asenkron toplayan fonksiyon
   Future<List<Map<String, dynamic>>> _fetchAllBids() async {
     List<Map<String, dynamic>> allBids = [];
     List<Future<QuerySnapshot>> futures = [];
     List<String> sourceCategories = [];
 
-    // 1. Adım: Tüm ana koleksiyonlardaki dökümanları çekip alt koleksiyon sorgularını hazırlıyoruz
     for (var entry in _collections.entries) {
       final categoryLabel = entry.key; // Örn: 'Paralar'
       final collectionName = entry.value; // Örn: 'Paralar' veya 'gems'
@@ -39,15 +37,11 @@ class _BidsListScreenState extends State<BidsListScreen> {
 
       for (var doc in mainSnapshot.docs) {
         futures.add(doc.reference.collection('Teklifler').get());
-        // Paralel bekleyen her bir 'Future'ın hangi kategoriye ait olduğunu kaçırmamak için kaydediyoruz
         sourceCategories.add(categoryLabel);
       }
     }
-
-    // 2. Adım: Tüm alt koleksiyon sorgularını eşzamanlı (paralel) çalıştırıp bekliyoruz
     final biddingsSnapshots = await Future.wait(futures);
 
-    // 3. Adım: Gelen dökümanları ayıklayıp kategori bilgisiyle harmanlıyoruz
     for (int i = 0; i < biddingsSnapshots.length; i++) {
       final snap = biddingsSnapshots[i];
       final currentCategory = sourceCategories[i];
@@ -56,7 +50,7 @@ class _BidsListScreenState extends State<BidsListScreen> {
         final data = doc.data() as Map<String, dynamic>;
         allBids.add({
           'docId': doc.id,
-          'koleksiyonKategorisi': currentCategory, // Filtrelemede kullanacağız
+          'koleksiyonKategorisi': currentCategory,
           ...data,
         });
       }
@@ -70,7 +64,7 @@ class _BidsListScreenState extends State<BidsListScreen> {
     final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A), // Daha derin bir premium siyah
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -87,7 +81,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
       ),
       body: Stack(
         children: [
-          // Arka Plan Premium Işık Efekti
           Positioned(
             top: -60,
             right: -60,
@@ -100,7 +93,7 @@ class _BidsListScreenState extends State<BidsListScreen> {
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.gold.withAlpha(12),
-                    blurRadius: 90, // Yumuşak parlama geçişi şimdi doğru yerde!
+                    blurRadius: 90,
                     spreadRadius: 30,
                   ),
                 ],
@@ -110,10 +103,7 @@ class _BidsListScreenState extends State<BidsListScreen> {
 
           Column(
             children: [
-              // 👑 MODERN KATEGORİ FİLTRELEME CHIPS ALANI
               _buildFilterBar(),
-
-              // TEKLİF LİSTESİ (FUTURE BUILDER)
               Expanded(
                 child: FutureBuilder<List<Map<String, dynamic>>>(
                   future: _fetchAllBids(),
@@ -142,8 +132,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
 
                     List<Map<String, dynamic>> allBids = snapshot.data ?? [];
                     List<Map<String, dynamic>> filteredBids = [];
-
-                    // 🎯 1. AŞAMA: Rol Tabanlı Filtreleme (Admin değilse sadece kendi teklifleri)
                     if (UserRole.isAdmin) {
                       filteredBids = allBids;
                     } else {
@@ -151,8 +139,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
                           .where((bid) => bid['kullaniciId'] == currentUserId)
                           .toList();
                     }
-
-                    // 🎯 2. AŞAMA: Kategori Seçimine Göre Filtreleme (Paralar, Pullar, Taşlar)
                     if (_selectedCategory != 'Tümü') {
                       filteredBids = filteredBids
                           .where(
@@ -162,8 +148,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
                           )
                           .toList();
                     }
-
-                    // 👑 3. AŞAMA: Bellek İçi Evrensel Tarih Sıralaması (Memory Sort)
                     if (filteredBids.isNotEmpty) {
                       filteredBids.sort((a, b) {
                         final Timestamp aTime =
@@ -185,8 +169,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
                       itemCount: filteredBids.length,
                       itemBuilder: (context, index) {
                         final bid = filteredBids[index];
-
-                        // Model karmaşasını önlemek için dinamik esnek alan eşitlemeleri
                         final String itemName =
                             bid['gemName'] ??
                             bid['tasAdi'] ??
@@ -209,7 +191,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
                         final String category =
                             bid['koleksiyonKategorisi'] ?? '';
 
-                        // Esnek Tarih Formatlama
                         String dateStr = "Tarih Belirtilmedi";
                         final Timestamp? timestamp =
                             bid['tarih'] as Timestamp? ??
@@ -223,9 +204,7 @@ class _BidsListScreenState extends State<BidsListScreen> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 14),
                           decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF141414,
-                            ), // Kart rengi koyulaştırıldı
+                            color: const Color(0xFF141414),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: AppColors.gold.withAlpha(25),
@@ -298,7 +277,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
                                   ),
                                 ),
                                 children: [
-                                  // Detay tıklandığında açılacak şık alt bilgilendirme paneli
                                   Container(
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(16),
@@ -347,9 +325,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
     );
   }
 
-  // 🛠️ YARDIMCI BİLEŞENLER (WIDGETS)
-
-  // Şık Üst Filtre Barı Tasarımı
   Widget _buildFilterBar() {
     final categories = ['Tümü', 'Paralar', 'Pullar', 'Taşlar'];
     return Container(
@@ -408,7 +383,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
     );
   }
 
-  // Kategori Rozeti (Badge)
   Widget _buildCategoryBadge(String category) {
     Color badgeColor;
     switch (category) {
@@ -440,7 +414,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
     );
   }
 
-  // Şık Resim Yükleyici Kapsayıcısı
   Widget _buildItemImage(String imagePath) {
     return Container(
       width: 46,
@@ -467,7 +440,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
     );
   }
 
-  // Alt Detay Satır Tasarımı
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [
@@ -491,7 +463,6 @@ class _BidsListScreenState extends State<BidsListScreen> {
     );
   }
 
-  // Boş Ekran Durumu Tasarımı
   Widget _buildEmptyState() {
     return Center(
       child: Column(

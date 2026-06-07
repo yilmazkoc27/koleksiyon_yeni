@@ -4,7 +4,6 @@ import 'core/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
-  // Flutter'ın tüm widget altyapısının hazır olduğundan emin oluyoruz
   WidgetsFlutterBinding.ensureInitialized();
 
   // Android klasörüne koyduğumuz google-services.json dosyasını okuyarak Firebase'i uyandırıyoruz

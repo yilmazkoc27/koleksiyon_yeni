@@ -98,9 +98,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 fontFamily: 'Palatino',
               ),
             ),
-
             const SizedBox(height: 60),
-
             CircularProgressIndicator(color: AppColors.gold),
           ],
         ),

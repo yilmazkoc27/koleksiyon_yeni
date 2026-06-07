@@ -95,31 +95,17 @@ class ItemDetailScreen extends StatelessWidget {
 
             const SizedBox(height: 25),
 
-            //-----------------------
-            // ORTAK ALANLAR
-            //-----------------------
             buildInfo("Yıl", item.year.toString()),
-
             buildInfo("Nadirlik", item.rarity),
-
             buildInfo("Kondisyon", item.condition),
-
             buildInfo("Materyal / Renk", item.material),
-
             buildInfo("Tahmini Değer", "${item.value} TL"),
 
-            //-----------------------
-            // GEMS'E ÖZEL ALANLAR
-            //-----------------------
             if (item.carat > 0) buildInfo("Karat", item.carat.toString()),
-
             if (item.processType.isNotEmpty)
               buildInfo("İşlenme Türü", item.processType),
-
             if (item.damage.isNotEmpty) buildInfo("Hasar Durumu", item.damage),
-
             const SizedBox(height: 25),
-
             const Text(
               "Açıklama",
               style: TextStyle(
