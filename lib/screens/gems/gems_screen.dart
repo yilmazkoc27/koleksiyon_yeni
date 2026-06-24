@@ -218,14 +218,48 @@ class _GemsScreenState extends State<GemsScreen> {
       appBar: AppBar(
         title: const Text("Değerli Taşlar"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.photo_album),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const GemsAlbumScreen()),
-              );
-            },
+          // Sağ üstteki album withalpha ile şimdilik gizlendi.
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0, top: 6.0, bottom: 6.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const GemsAlbumScreen()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withAlpha(1),
+                  borderRadius: BorderRadius.circular(12), // Oval köşeler
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(2),
+                      blurRadius: 4,
+                      offset: const Offset(
+                        0,
+                        2,
+                      ), // Hafif derinlik hissi veren gölge
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.photo_album,
+                      color:
+                          AppColors.cardBlack, // Kontrast için koyu renk ikon
+                      size: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -282,24 +316,81 @@ class _GemsScreenState extends State<GemsScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
+                      // Geliştirilmiş Yeni Albüm Butonu Kartı
                       Container(
-                        height: 170,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: AppColors.cardBlack,
                           borderRadius: BorderRadius.circular(25),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.cardBlack, AppColors.surface],
+                          ),
+                          border: Border.all(
+                            color: AppColors.gold.withRed(5),
+                            width: 2,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.gold.withOpacity(0.15),
-                              blurRadius: 15,
+                              color: AppColors.gold.withRed(2),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 6),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 12,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.diamond,
-                            size: 80,
-                            color: AppColors.gold,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(23),
+                            splashColor: AppColors.gold.withOpacity(0.15),
+                            highlightColor: AppColors.gold.withOpacity(0.08),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const GemsAlbumScreen(),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 25,
+                              ),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  const Icon(
+                                    Icons.diamond_rounded,
+                                    color: AppColors.info,
+                                    size: 85,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Column(
+                                    children: [
+                                      Text(
+                                        "SERGİ SALONU",
+                                        style: TextStyle(
+                                          color: AppColors.gold,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1,
+                                          fontStyle: FontStyle.italic,
+                                          fontFamily: 'Palatino',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -785,53 +876,23 @@ class _GemsScreenState extends State<GemsScreen> {
                                 style: const TextStyle(color: Colors.white),
                               ),
                               subtitle: Text(
-                                "${item.year} - ${item.material}\n${item.value} TL",
+                                "${item.value} TL - Nadirlik: ${item.rarity}",
                                 style: const TextStyle(color: Colors.white70),
                               ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      item.isFavorite
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      color: AppColors.gold,
-                                    ),
-                                    onPressed: () async {
-                                      setState(() {
-                                        item.isFavorite = !item.isFavorite;
-                                      });
-
-                                      try {
-                                        await FirebaseFirestore.instance
-                                            .collection("gems")
-                                            .doc(docId)
-                                            .update({
-                                              'isFavorite': item.isFavorite,
-                                            });
-                                      } catch (e) {
-                                        setState(() {
-                                          item.isFavorite = !item.isFavorite;
-                                        });
-                                        _showSnackBar(
-                                          "Favori güncellenemedi",
-                                          Colors.red,
-                                        );
-                                      }
-                                    },
-                                  ),
-                                  if (UserRole.isAdmin)
-                                    IconButton(
+                              trailing: UserRole.isAdmin
+                                  ? IconButton(
                                       icon: const Icon(
                                         Icons.delete,
-                                        color: Colors.red,
+                                        color: Colors.redAccent,
                                       ),
                                       onPressed: () =>
                                           _deleteGemFromFirestore(docId),
+                                    )
+                                  : const Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 16,
+                                      color: Colors.white54,
                                     ),
-                                ],
-                              ),
                             ),
                           );
                         },

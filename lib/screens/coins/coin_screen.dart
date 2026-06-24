@@ -1,8 +1,4 @@
 // // 1. KÜTÜPHANELERİN İTHAL EDİLMESİ (IMPORT)
-// Bu blok; Flutter'ın görsel arayüz elemanlarını, Firebase Firestore ve Storage bulut servislerini,
-// cihazdan galeriye erişim (ImagePicker) ve dosya/yol işlemlerini sağlayan kütüphaneleri sayfaya dahil eder.
-// Ayrıca proje içindeki renk teması, hesaplama aracı, veri modeli ve diğer ekranların dosyalarını bağlar.
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -16,21 +12,14 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'coin_detail_screen.dart';
 
-// 2. VERİ TRANSFER MODELİ (FirestoreCoinModel)
-// Firestore'dan gelen her bir madeni paranın doküman kimliğini (docId) ve paraya ait detaylı verileri
-// (CollectionItem) tek bir nesne altında birleştiren yardımcı bir sınıftır. Bu sayede veriler listelenirken
-// hangi elemanın hangi dokümana ait olduğu kolayca takip edilir.
-
+// // 2. VERİ TRANSFER MODELİ (FirestoreCoinModel)
 class FirestoreCoinModel {
   final String docId;
   final CollectionItem coin;
   FirestoreCoinModel({required this.docId, required this.coin});
 }
-// // 3. STATEFUL WIDGET VE DURUM YÖNETİMİ BAŞLANGICI (CoinScreen & State)
-// Ekrandaki form alanları, arama motoru, filtreler ve yüklenme animasyonları gibi
-// anlık olarak değişen durumları (State) yönetebilmek için StatefulWidget yapısını ve
-// bu yapıya ait değişkenleri tanımlar.
 
+// // 3. STATEFUL WIDGET VE DURUM YÖNETİMİ BAŞLANGICI (CoinScreen & State)
 class CoinScreen extends StatefulWidget {
   const CoinScreen({super.key});
 
@@ -40,9 +29,6 @@ class CoinScreen extends StatefulWidget {
 
 class _CoinScreenState extends State<CoinScreen> {
   // // 4. KONTROLCÜLER VE GEÇİCİ DEĞİŞKENLERİN TANIMLANMASI
-  // Form alanlarına yazılan metinleri kontrol eden TextEditingController yapılarını, resim seçiciyi
-  // (ImagePicker) ve paranın nadirlik, kondisyon, materyal gibi varsayılan seçim değerlerini hafızada
-  // tutan değişkenleri oluşturur
   int estimatedValue = 0;
   String? selectedDocId;
   int totalValue = 0;
@@ -66,9 +52,6 @@ class _CoinScreenState extends State<CoinScreen> {
 
   @override
   // // 5. BELLEK TEMİZLEME İŞLEMİ (dispose)
-  // Sayfadan çıkıldığında veya ekran kapatıldığında; arama ve form alanlarını kontrol eden
-  // controller yapılarını kapatarak uygulamanın cihaz hafızasında (RAM) gereksiz yer kaplamasını
-  //ve şişmesini (Memory Leak) önler
   void dispose() {
     nameController.dispose();
     yearController.dispose();
@@ -78,10 +61,6 @@ class _CoinScreenState extends State<CoinScreen> {
   }
 
   // // 6. BULUT DEPOLAMAYA GÖRSEL YÜKLEME METODU (_uploadImageToStorage)
-  // Seçilen madeni para fotoğrafına benzersiz bir isim (zaman damgası ekleyerek) verir ve bunu
-  // Firebase Storage altındaki madeni_paralar klasörüne yükler. Yükleme başarılı olursa görselin
-  // internet adresini (URL) döndürür
-
   Future<String> _uploadImageToStorage(File imageFile) async {
     try {
       String fileName = p.basename(imageFile.path);
@@ -100,11 +79,8 @@ class _CoinScreenState extends State<CoinScreen> {
       return "";
     }
   }
-  // // 7. FIRESTORE'A YENİ PARA EKLEME METODU (_addCoinToFirestore)
-  // Formdaki isim ve yıl alanlarının dolu olduğunu kontrol eder. Varsa seçilen resmi buluta yükler,
-  // ardından tüm form verilerini (isim, yıl, nadirlik, değer vb.) Firebase Firestore'daki 'Paralar'
-  // koleksiyonuna yeni bir doküman olarak kaydeder
 
+  // // 7. FIRESTORE'A YENİ PARA EKLEME METODU (_addCoinToFirestore)
   Future<void> _addCoinToFirestore() async {
     if (nameController.text.trim().isEmpty ||
         yearController.text.trim().isEmpty) {
@@ -143,10 +119,8 @@ class _CoinScreenState extends State<CoinScreen> {
       setState(() => _isUploading = false);
     }
   }
-  // // 8. FIRESTORE'DAKİ PARAYI GÜNCELLEME METODU (_updateCoinInFirestore)
-  // Listeden seçilen mevcut bir madeni paranın bilgilerini (ve eğer yeni bir resim seçildiyse yeni resmi)
-  // Firestore üzerindeki kendi doküman kimliğini (selectedDocId) bularak günceller.
 
+  // // 8. FIRESTORE'DAKİ PARAYI GÜNCELLEME METODU (_updateCoinInFirestore)
   Future<void> _updateCoinInFirestore() async {
     if (selectedDocId == null) {
       _showSnackBar(
@@ -188,10 +162,8 @@ class _CoinScreenState extends State<CoinScreen> {
       setState(() => _isUploading = false);
     }
   }
-  // // 9. FIRESTORE'DAN PARA SİLME METODU (_deleteCoinFromFirestore)
-  // Kullanıcının seçtiği madeni parayı, kendisine ait olan benzersiz doküman kimliğini (docId)
-  // kullanarak Firebase Firestore veri tabanından kalıcı olarak siler.
 
+  // // 9. FIRESTORE'DAN PARA SİLME METODU (_deleteCoinFromFirestore)
   Future<void> _deleteCoinFromFirestore(String docId) async {
     try {
       await FirebaseFirestore.instance
@@ -206,10 +178,8 @@ class _CoinScreenState extends State<CoinScreen> {
       _showSnackBar("Silme hatası: $e", Colors.red);
     }
   }
-  // // 10. FORMU TEMİZLEME METODU (_clearForm)
-  // Ekleme, güncelleme veya silme işlemlerinden sonra formdaki tüm metin alanlarını boşaltır,
-  // seçilen resimleri sıfırlar ve drop-down (açılır menü) seçimlerini varsayılan değerlerine geri döndürür.
 
+  // // 10. FORMU TEMİZLEME METODU (_clearForm)
   void _clearForm() {
     setState(() {
       nameController.clear();
@@ -224,19 +194,15 @@ class _CoinScreenState extends State<CoinScreen> {
       selectedDocId = null;
     });
   }
-  // // 11. BİLGİLENDİRME MESAJI GÖSTERİMİ (_showSnackBar)
-  // Kullanıcıya işlem sonuçlarını (başarılı, hata, uyarı vb.) ekranın alt kısmında küçük,
-  // renkli bir şerit mesaj (SnackBar) halinde gösterir.
 
+  // // 11. BİLGİLENDİRME MESAJI GÖSTERİMİ (_showSnackBar)
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
-  // // 12. GALERİDEN FOTOĞRAF SEÇME METODU (pickImage)
-  // Cihazın galerisini açarak kullanıcının madeni paraya ait bir fotoğraf seçmesini sağlar ve
-  // seçilen bu fotoğrafı ekranda göstermek üzere bir File nesnesine dönüştürür.
 
+  // // 12. GALERİDEN FOTOĞRAF SEÇME METODU (pickImage)
   Future<void> pickImage() async {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -245,34 +211,17 @@ class _CoinScreenState extends State<CoinScreen> {
       });
     }
   }
-  // // 13. EKRAN ARAYÜZÜ İNŞASI VE APPBAR (build)
-  // Sayfanın ana iskeletini oluşturur. Üst kısımda "Hatıra Paralar" başlığını ve albüm ekranına
-  // (CoinAlbumScreen) geçiş sağlayan ikonlu butonu barındıran AppBar'ı çizer.
 
+  // // 13. EKRAN ARAYÜZÜ İNŞASI VE APPBAR (build)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Hatıra Paralar"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.photo_album),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CoinAlbumScreen()),
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text("Hatıra Paralar")),
       body: _isUploading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.gold),
             )
           // // 14. ANLIK VERİ AKIŞI VE FİLTRELEME YAPISI (StreamBuilder)
-          // Firestore'daki 'Paralar' koleksiyonunu canlı olarak dinler. Veri tabanında bir değişiklik olduğunda tetiklenir;
-          // gelen verileri arama terimine ve nadirlik filtresine göre ayıklar, ardından artan/azalan fiyata göre sıralar
           : StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('Paralar')
@@ -309,39 +258,93 @@ class _CoinScreenState extends State<CoinScreen> {
                       ? a.coin.value.compareTo(b.coin.value)
                       : b.coin.value.compareTo(a.coin.value),
                 );
-                // // 15. DIŞ ÇERÇEVE VE GÖRSEL TASARIM (ListView & Logo)
-                // Tüm sayfa elemanlarını dikeyde kaydırılabilir bir liste içinde toplar.
-                // En üst kısımda estetik amaçlı altın sarısı bir para ikonu içeren siyah renkli bir tasarım kartı gösterir
 
+                // // 15. DIŞ ÇERÇEVE VE GÖRSEL TASARIM (ListView & Geliştirilmiş Albüm Butonu)
                 return ListView(
                   padding: const EdgeInsets.all(20),
                   children: [
+                    // GÜNCELLENEN KISIM: Eski düz Container yerine senin tasarladığın premium Albüm Buton Kartı
                     Container(
-                      height: 140,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: AppColors.cardBlack,
                         borderRadius: BorderRadius.circular(25),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppColors.cardBlack, AppColors.surface],
+                        ),
+                        border: Border.all(
+                          color: AppColors.gold.withRed(5),
+                          width: 2,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.gold.withAlpha(40),
-                            blurRadius: 15,
+                            color: AppColors.gold.withRed(2),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 12,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.monetization_on,
-                          size: 70,
-                          color: AppColors.gold,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(
+                            23,
+                          ), // Sınır çizgisi taşmasın diye
+                          splashColor: AppColors.gold.withOpacity(0.15),
+                          highlightColor: AppColors.gold.withOpacity(0.08),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CoinAlbumScreen(),
+                              ),
+                            );
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 25,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Icon(
+                                  Icons.monetization_on_rounded,
+                                  color: AppColors.amber,
+                                  size: 85,
+                                ),
+                                SizedBox(height: 12),
+                                Column(
+                                  children: [
+                                    Text(
+                                      "SERGİ SALONU",
+                                      style: TextStyle(
+                                        color: AppColors.amber,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1,
+                                        fontStyle: FontStyle.italic,
+                                        fontFamily: 'Palatino',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 25),
 
                     // // 16. YÖNETİCİ PANELİ VE FORM ALANLARI (UserRole.isAdmin)
-                    // Eğer uygulamaya giriş yapan kullanıcı bir yönetici (Admin) ise; fotoğraf seçme alanını,
-                    // para adı, yılı, açıklaması, nadirlik, kondisyon ve materyal seçim alanlarını ekrana dahil eder
                     if (UserRole.isAdmin) ...[
                       GestureDetector(
                         onTap: pickImage,
@@ -431,9 +434,6 @@ class _CoinScreenState extends State<CoinScreen> {
                           "Bakır",
                         ],
                         // // 17. DEĞER HESAPLAMA VE İSTATİSTİK BUTONLARI
-                        // Yöneticinin formdaki kriterlere göre tahmini fiyat hesaplamasını, parayı eklemesini,
-                        // güncellemesini, formu temizlemesini ve koleksiyondaki toplam/ortalama değer istatistiklerini
-                        //hesaplamasını sağlayan buton grubudur
                         (v) => setState(() => material = v!),
                       ),
                       const SizedBox(height: 25),
@@ -575,12 +575,12 @@ class _CoinScreenState extends State<CoinScreen> {
                     const SizedBox(height: 15),
 
                     if (filteredList.isEmpty)
-                      Center(
+                      const Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(20.0),
+                          padding: EdgeInsets.all(20.0),
                           child: Text(
                             "Aranan kriterlere uygun para bulunamadı.",
-                            style: const TextStyle(color: Colors.white70),
+                            style: TextStyle(color: Colors.white70),
                           ),
                         ),
                       )
@@ -637,7 +637,7 @@ class _CoinScreenState extends State<CoinScreen> {
                                     backgroundColor: Colors.black26,
                                     child: Icon(
                                       Icons.monetization_on,
-                                      color: AppColors.gold,
+                                      color: Color.fromARGB(255, 10, 10, 10),
                                     ),
                                   ),
                             title: Text(

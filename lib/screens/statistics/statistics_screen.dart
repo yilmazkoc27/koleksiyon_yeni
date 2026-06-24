@@ -424,12 +424,52 @@ class StatisticsScreen extends StatelessWidget {
                         BarChartData(
                           gridData: const FlGridData(show: false),
                           borderData: FlBorderData(show: false),
-                          titlesData: const FlTitlesData(
-                            topTitles: AxisTitles(
+                          titlesData: FlTitlesData(
+                            topTitles: const AxisTitles(
                               sideTitles: SideTitles(showTitles: false),
                             ),
-                            rightTitles: AxisTitles(
+                            rightTitles: const AxisTitles(
                               sideTitles: SideTitles(showTitles: false),
+                            ),
+                            leftTitles: const AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                              ),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 30,
+                                getTitlesWidget: (double value, TitleMeta meta) {
+                                  String text = '';
+                                  switch (value.toInt()) {
+                                    case 0:
+                                      text = 'Hatıra Para';
+                                      break;
+                                    case 1:
+                                      text = 'Pul';
+                                      break;
+                                    case 2:
+                                      text = 'Taşlar';
+                                      break;
+                                  }
+                                  // SideTitleWidget yerine hata vermeyen standart Padding yapısı kullanıldı
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 6.0,
+                                    ), // Çubukla yazı arasındaki boşluk
+                                    child: Text(
+                                      text,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                           barGroups: [
@@ -534,60 +574,9 @@ class StatisticsScreen extends StatelessWidget {
                           ),
                     const SizedBox(height: 35),
 
-                    const Text(
-                      "Başarılar",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.gold,
-                      ),
-                    ),
                     const SizedBox(height: 15),
-                    achievements.isEmpty
-                        ? const Text(
-                            "Henüz kazanılan başarı yok.",
-                            style: TextStyle(color: Colors.grey),
-                          )
-                        : SizedBox(
-                            height: 60,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: achievements.length,
-                              itemBuilder: (context, index) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  margin: const EdgeInsets.only(right: 15),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.cardBlack,
-                                    borderRadius: BorderRadius.circular(15),
-                                    border: Border.all(color: Colors.white10),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      achievements[index],
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+
                     const SizedBox(height: 25),
-                    Center(
-                      child: Text(
-                        "$level Seviyesi",
-                        style: const TextStyle(
-                          color: AppColors.gold,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               );

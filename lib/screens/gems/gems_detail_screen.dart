@@ -145,7 +145,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.surfaceVariant,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -267,7 +267,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surfaceVariant,
       appBar: AppBar(
         title: Text(widget.item.name),
         leading: IconButton(
@@ -289,12 +289,7 @@ class _GemsDetailScreenState extends State<GemsDetailScreen> {
               width: double.infinity,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppColors.gold.withAlpha(40),
-                    width: 1,
-                  ),
-                ),
+                border: Border.all(color: AppColors.gold.withRed(5), width: 5),
               ),
               child: widget.item.imagePath.isNotEmpty
                   ? Image.network(

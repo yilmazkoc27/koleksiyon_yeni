@@ -81,7 +81,7 @@ class GemsAlbumScreen extends StatelessWidget {
                     color: AppColors.cardBlack,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: AppColors.gold.withGreen(1),
+                      color: AppColors.gold.withRed(1),
                       width: 1,
                     ),
                     boxShadow: [

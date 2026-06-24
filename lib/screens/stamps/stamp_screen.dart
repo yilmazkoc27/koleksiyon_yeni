@@ -60,7 +60,6 @@ class _StampScreenState extends State<StampScreen> {
       String fileName = p.basename(imageFile.path);
       String uniqueFileName =
           "${DateTime.now().millisecondsSinceEpoch}_$fileName";
-
       Reference storageRef = FirebaseStorage.instance.ref().child(
         'posta_pullari/$uniqueFileName',
       );
@@ -104,7 +103,6 @@ class _StampScreenState extends State<StampScreen> {
         'imagePath': uploadedUrl,
         'isFavorite': false,
         'createdAt': FieldValue.serverTimestamp(),
-        // Teklif sistemi için varsayılan başlangıç değerleri:
         'highestBid': 0,
         'highestBidder': '',
         'biddingEndsAt': null,
@@ -136,7 +134,6 @@ class _StampScreenState extends State<StampScreen> {
 
     try {
       String uploadedUrl = currentImageUrl;
-
       if (selectedImage != null) {
         uploadedUrl = await _uploadImageToStorage(selectedImage!);
       }
@@ -264,52 +261,83 @@ class _StampScreenState extends State<StampScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
+                      // Geliştirilmiş Yeni Albüm Butonu Kartı (Sergi Salonu)
                       Container(
-                        height: 170,
                         width: double.infinity,
+                        height: 190,
                         decoration: BoxDecoration(
-                          color: AppColors.cardBlack,
                           borderRadius: BorderRadius.circular(25),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.cardBlack, AppColors.surface],
+                          ),
+                          border: Border.all(
+                            color: AppColors.gold.withRed(2),
+                            width: 2,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.gold.withAlpha(40),
-                              blurRadius: 15,
+                              color: AppColors.gold.withRed(1),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 6),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 12,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
-                        child: Stack(
-                          children: [
-                            const Center(
-                              child: Icon(
-                                Icons.local_post_office,
-                                size: 80,
-                                color: AppColors.gold,
-                              ),
-                            ),
-                            Positioned(
-                              top: 10,
-                              right: 10,
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.photo_album,
-                                  color: AppColors.gold,
-                                  size: 30,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(23),
+                            splashColor: AppColors.gold.withOpacity(0.15),
+                            highlightColor: AppColors.gold.withOpacity(0.08),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => StampAlbumScreen(
+                                    stampList: allStamps
+                                        .map((e) => e.stamp)
+                                        .toList(),
+                                  ),
                                 ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => StampAlbumScreen(
-                                        stampList: allStamps
-                                            .map((e) => e.stamp)
-                                            .toList(),
-                                      ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 25,
+                              ),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  const Icon(
+                                    Icons.mail_lock_rounded,
+                                    color: AppColors.gold,
+                                    size: 85,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "SERGİ SALONU",
+                                    style: TextStyle(
+                                      color: AppColors.gold,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1,
+                                      fontStyle: FontStyle.italic,
+                                      fontFamily: 'Palatino',
                                     ),
-                                  );
-                                },
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 25),
@@ -631,7 +659,6 @@ class _StampScreenState extends State<StampScreen> {
                           final stampModel = filteredList[index];
                           final item = stampModel.stamp;
                           final docId = stampModel.docId;
-
                           return Card(
                             color: AppColors.cardBlack,
                             child: ListTile(
@@ -695,7 +722,6 @@ class _StampScreenState extends State<StampScreen> {
                                       setState(() {
                                         item.isFavorite = !item.isFavorite;
                                       });
-
                                       try {
                                         await FirebaseFirestore.instance
                                             .collection('Pullar')
